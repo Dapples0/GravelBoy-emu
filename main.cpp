@@ -6,7 +6,7 @@
 int main() {
     gb gb;
 
-    gb.run("test/tetris.gb");
+    gb.run("rom/tetris.gb");
 
 
 

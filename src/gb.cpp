@@ -8,7 +8,7 @@ gb::gb() {
     mmu = MMU();
     timer = Timer();
 
-    // cpu.connect(&mmu);
+    cpu.connect(&mmu);
     mmu.connect(&gpu, &joypad, &timer, &apu);
 }
 
@@ -17,6 +17,8 @@ gb::~gb()
 }
 
 void gb::run(const char *filename) {
-    mmu.loadRom(filename);
+    int mode = mmu.loadRom(filename);
+    cpu.setState(mode);
+    cpu.execute();
 }
 
