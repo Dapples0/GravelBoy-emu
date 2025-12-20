@@ -18,7 +18,7 @@ class CPU {
 
         /** GP Registers
          * 0 - A
-         * 1 - F
+         * 1 - F -> lower 4 bits contains flag registers z, n, h, c (do not confuse the flag registers and gp registers)
          * 2 - B
          * 3 - C
          * 4 - D
@@ -59,21 +59,14 @@ class CPU {
         uint16_t getHL();
 
         // Generic Instructions
-        void INC8();
-        void INC16();
-        void DEC8();
-        void DEC16();
-        void RLCA();
-        void RLA();
-        void DEC();
-        void RET();
-        void POP();
-        void CALL();
-        void PUSH();
-        void RST();
-        void RET();
+        void RET(bool condition);
+        void CALL(bool condition);
+        void RST(uint8_t vec);
+        void JP(bool condition);
 
         // Arithmic Operations
+        uint8_t INC8(uint8_t val);
+        uint8_t DEC8(uint8_t val);
         void ADD8(uint8_t val);
         void ADD16(uint16_t val);
         void ADC(uint8_t val);
@@ -95,6 +88,7 @@ class CPU {
         void SRL();
         void BIT();
         void RES();
+
 
         // Flag helpers
         // void setHAdd(uint8_t left, uint8_t right);

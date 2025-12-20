@@ -176,6 +176,64 @@ uint16_t CPU::getHL() {
 }
 
 
+void CPU::RET(bool condition) {
+    if (condition) {
+        uint8_t low = mmu->read8(sp++);
+        uint8_t high = mmu->read8(sp++);
+        pc = (high << 8) | low;
+        
+        // pc = mmu->read8(sp++);
+        // sp += 2;
+    }
+}
+
+void CPU::CALL(bool condition) {
+    uint16_t address = mmu->read16(pc);
+    pc += 2;
+    if (condition) {
+        mmu->write8(--sp, (pc >> 8) & 0xFF);
+        mmu->write8(--sp, pc & 0xFF);
+
+        // Impliciet jump
+        pc = address;
+    }
+}
+
+void CPU::RST(uint8_t vec) {
+    mmu->write8(--sp, (pc >> 8) & 0xFF);
+    mmu->write8(--sp, pc & 0xFF);
+    pc = vec;
+}
+
+void CPU::JP(bool condition) {
+    if (condition) {
+        pc = mmu->read16(pc);
+    } else {
+        pc += 2;
+    }
+}
+
+uint8_t CPU::INC8(uint8_t val) {
+    setN(false);
+    setH((val & 0xF) + (1 & 0xF) > 0xF);
+    
+    uint8_t res = val + 1;
+    setZ(res == 0);
+
+    return res;
+}
+
+
+uint8_t CPU::DEC8(uint8_t val) {
+    setN(true);
+    setH((val & 0xF) < (1 & 0xF));
+    
+    uint8_t res = val - 1;
+    setZ(res == 0);
+
+    return res;
+}
+
 void CPU::ADD8(uint8_t val) {
     setN(false);
     setH((registers[0] & 0xF) + (val & 0xF) > 0xF);
@@ -187,6 +245,14 @@ void CPU::ADD8(uint8_t val) {
 }
 
 void CPU::ADD16(uint16_t val) {
+    uint32_t res = getHL() + val;
+    setN(false);
+    setC((res > 0xFFFF));
+    setH((getHL() & 0x0FFF) + (val & 0x0FFF) > 0x0FFF);
+
+    // Set H and L registers
+    registers[6] = (res >> 8) & 0xFF; 
+    registers[7] = res & 0xFF;
 
 }
 

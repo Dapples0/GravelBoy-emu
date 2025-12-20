@@ -156,8 +156,19 @@ uint8_t MMU::read8(uint16_t address)
     return 0;
 }
 
+uint16_t MMU::read16(uint16_t address)
+{
+    return (read8(address + 1) << 8) | read8(address);
+}
+
 
 
 void MMU::write8(uint16_t address, uint8_t data)
 {
+}
+
+void MMU::write16(uint16_t address, uint16_t data)
+{
+    write8(address, data & 0xFF);
+    write8(address + 1, data >> 8);
 }
