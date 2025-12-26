@@ -32,7 +32,7 @@ int MMU::loadRom(const char *filename) {
     if (stream.is_open()) {
         char byte;
         romSize = (int)stream.tellg();
-        std::cout << romSize << "\n"; // File size
+        std::cout << "Stream file size: " << romSize << "\n"; // File size
         romData = std::vector<std::array<uint8_t, ROM_BANK_SIZE>>(romSize / (ROM_BANK_SIZE));
         
         stream.seekg(0, std::ios::beg);
@@ -169,6 +169,6 @@ void MMU::write8(uint16_t address, uint8_t data)
 
 void MMU::write16(uint16_t address, uint16_t data)
 {
-    write8(address, data & 0xFF);
-    write8(address + 1, data >> 8);
+    write8(address, data & 0xFF); // Low bit
+    write8(address + 1, (data >> 8) & 0xFF); // High bit
 }

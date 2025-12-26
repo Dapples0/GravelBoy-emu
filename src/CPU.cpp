@@ -17,7 +17,7 @@ void CPU::connect(MMU *mmu) {
 void CPU::execute() {
     uint8_t opcode = mmu->read8(pc);
 
-    std::cout << "opcode: " << opcode << "\n";
+    std::cout << "opcode: " << (int)opcode << "\n";
 
     executeInstruction(opcode);
 
@@ -27,7 +27,7 @@ void CPU::execute() {
 void CPU::executeInstruction(uint8_t opcode) {
     pc++;
 
-    // Instructions Done: 51/501
+    // Instructions Done: 244/501
     switch (opcode) {
         case 0xCB: // 0xCB Prefixed
             break;
@@ -39,6 +39,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             // Do nothing
             break;
         case 0x27: // DAA
+        {
             uint8_t adjustment = 0x00;
             if (getN()) {
                 if (getH()) {
@@ -65,11 +66,13 @@ void CPU::executeInstruction(uint8_t opcode) {
 
             setH(false);
             setZ(registers[REG_A] == 0);
-
+            
+        }
             break;
+            
 
         case 0x10: // STOP - NOTES: As per pandocs, licensed roms do not use STOP outside of GCB speed switching. So implementing DMG slow mode might not be necessary/can be implemented later as a TODO
-
+        {
             // Only used for CGB
             if (!CGBMode) {
                 return;
@@ -84,12 +87,155 @@ void CPU::executeInstruction(uint8_t opcode) {
                 ((key1 & 0x80) == 0x80) ? mmu->write8(0xFF4D, 0x00) : mmu->write8(0xFF4D, 0x80);   
             }
 
-            pc++;
+            pc++;            
+        }
+            break;
+
+
+        case 0x07: // RLCA
+        {
+            uint8_t carry = (registers[REG_A] & 0x80) >> 7;
+            registers[REG_A] = (registers[REG_A] << 1) | carry;
+
+            setC(carry != 0);
+            setN(false);
+            setH(false);
+            setZ(false);
+        }
+            break;
+
+        case 0x0F: // RRCA
+        {
+            uint8_t carry = (registers[REG_A] & 0x01);
+            registers[REG_A] = (registers[REG_A] >> 1) | (carry << 7);
+
+            setC(carry != 0);
+            setN(false);
+            setH(false);
+            setZ(false);        
+        }
+            break;
+
+        case 0x17: // RLA
+        {
+            uint8_t cFlag = (uint8_t)getC();
+            uint8_t carry = (registers[REG_A] & 0x80);
+            registers[REG_A] = (registers[REG_A] << 1) | cFlag;
+
+            setC(carry != 0);
+            setN(false);
+            setH(false);
+            setZ(false);
+        }
+            break;
+
+        case 0x1F: // RRA
+        {
+            uint8_t cFlag = (uint8_t)getC();
+            uint8_t carry = (registers[REG_A] & 0x01);
+            registers[REG_A] = (registers[REG_A] >> 1) | (cFlag << 7);
+
+            setC(carry != 0);
+            setN(false);
+            setH(false);
+            setZ(false);            
+        }
             break;
 
         /**
          * Load Instructions
          */
+        case 0x01: // LD BC, u16
+            setBC(mmu->read16(pc));
+            pc += 2;
+            break;
+        case 0x02: // LD (BC), A
+            mmu->write8(getBC(), registers[REG_A]);
+            break;
+
+        case 0x06: // LD B, u8
+            registers[REG_B] = mmu->read8(pc);
+            pc++;
+            break;
+
+        case 0x0A: // LD A, (BC)
+            registers[REG_A] = mmu->read8(getBC());
+            break;
+
+        case 0x0E: // LD C, u8
+            registers[REG_C] = mmu->read8(pc);
+            pc++;
+            break;
+
+        case 0x11: // LD DE, u16
+            setDE(mmu->read16(pc));
+            pc += 2;
+            break;
+
+        case 0x12: // LD (DE), A
+            mmu->write8(getDE(), registers[REG_A]);
+            break;
+
+        case 0x16: // LD D, u8
+            registers[REG_D] = mmu->read8(pc);
+            pc++;
+            break;
+
+        case 0x1A: // LD A, (DE)
+            registers[REG_A] = mmu->read8(getDE());
+            break;
+
+        case 0x1E: // LD E, u8
+            registers[REG_E] = mmu->read8(pc);
+            pc++;
+            break;
+
+        case 0x21: // LD HL, u16
+            setHL(mmu->read16(pc));
+            pc += 2;
+            break;
+
+        case 0x22: // LD (HL+), A
+            mmu->write8(getHL(), registers[REG_A]);
+            setHL(getHL() + 1);
+            break;
+
+        case 0x26: // LD H, u8
+            registers[REG_H] = mmu->read8(pc);
+            pc++;
+            break;
+
+        case 0x2A: // LD A, (HL+)
+            registers[REG_A] = mmu->read8(getHL());
+            setHL(getHL() + 1);
+            break;
+
+        case 0x2E: // LD L, u8
+            registers[REG_L] = mmu->read8(pc);
+            pc++;
+            break;
+
+
+        case 0x32: // LD (HL-), A
+            mmu->write8(getHL(), registers[REG_A]);
+            setHL(getHL() - 1);
+            break;
+
+        case 0x36: // LD (HL), u8
+            mmu->write8(getHL(), mmu->read8(pc));
+            pc++;
+            break;
+
+        case 0x3A: // LD A, (HL-)
+            registers[REG_A] = mmu->read8(getHL());
+            setHL(getHL() - 1);
+            break;
+
+        case 0x3E: // LD A, u8
+            registers[REG_A] = mmu->read8(pc);
+            pc++;
+            break;
+    
         case 0x40: // LD B, B
             registers[REG_B] = registers[REG_B];
             break;
@@ -307,10 +453,6 @@ void CPU::executeInstruction(uint8_t opcode) {
             mmu->write8(getHL(), registers[REG_L]);
             break;
 
-        case 0x76: // HALT | TODO
-            halt = true;
-            break;
-
         case 0x77: // LD (HL), A
             mmu->write8(getHL(), registers[REG_A]);
             break;
@@ -347,7 +489,101 @@ void CPU::executeInstruction(uint8_t opcode) {
             registers[REG_A] = registers[REG_A];
             break;
 
-        // 8-bit Arithmetic Instructions
+        case 0xE0: // LD (FF00+u8), A
+            mmu->write8(0xFF00 + mmu->read8(pc), registers[REG_A]);
+            pc++;
+            break;
+
+        case 0xE2: // LD (FF00+C), A
+            mmu->write8(0xFF00 + registers[REG_C], registers[REG_A]);
+            break;
+
+        case 0xEA: // LF (u16), A
+            mmu->write16(mmu->read16(pc), registers[REG_A]);
+            pc += 2;
+            break;
+
+        case 0xF0: // LD A, (FF00+u8)
+            registers[REG_A] = mmu->read8(0xFF00 + mmu->read8(pc));
+            pc++;
+            break;
+
+        case 0xF2: // LD A, (FF00+C),
+            registers[REG_A] = mmu->read8(0xFF00 + registers[REG_C]);
+            break;
+
+        case 0xFA: // LD A, (u16)
+            registers[REG_A] = mmu->read16(registers[REG_A]);
+            pc += 2;
+            break; 
+
+        /**
+         * 8-bit Arithmetic Instructions
+         */
+        case 0x04: // INC B
+            registers[REG_B] = INC8(registers[REG_B]);
+            break;
+        
+        case 0x05: // DEC B
+            registers[REG_B] = DEC8(registers[REG_B]);
+            break;
+
+        case 0x0C: // INC C
+            registers[REG_C] = INC8(registers[REG_C]);
+            break;
+    
+        case 0x0D: // DEC C
+            registers[REG_C] = DEC8(registers[REG_C]);
+            break;
+
+        case 0x14: // INC D
+            registers[REG_D] = INC8(registers[REG_D]);
+            break;
+
+        case 0x15: // DEC D
+            registers[REG_D] = DEC8(registers[REG_D]);
+            break;
+
+        case 0x1C: // INC E
+            registers[REG_E] = INC8(registers[REG_E]);
+            break;
+
+        case 0x1D: // DEC E
+            registers[REG_E] = DEC8(registers[REG_E]);
+            break;
+
+        case 0x24: // INC H
+            registers[REG_H] = INC8(registers[REG_H]);
+            break;
+
+        case 0x25: // DEC H
+            registers[REG_H] = DEC8(registers[REG_H]);
+            break;
+        
+        case 0x2C: // INC L
+            registers[REG_L] = INC8(registers[REG_L]);
+            break;
+        
+        case 0x2D: // DEC L
+            registers[REG_L] = DEC8(registers[REG_L]);
+            break;
+
+        case 0x34: // INC (HL)
+            mmu->write8(getHL(), INC8(mmu->read8(getHL())));
+            break;
+
+        case 0x35: // DEC (HL)
+            mmu->write8(getHL(), DEC8(mmu->read8(getHL())));
+            break;
+    
+        case 0x3C: // INC A
+            registers[REG_A] = INC8(registers[REG_A]);
+            break;
+
+        case 0x3D: // DEC A
+            registers[REG_A] = DEC8(registers[REG_A]);
+            break;
+
         case 0x80: // ADD A, B
             ADD8(registers[REG_B]);
             break;
@@ -497,12 +733,55 @@ void CPU::executeInstruction(uint8_t opcode) {
             pc++;
             break;
 
+        /**
+         * 16-bit Arithmetic Instructions
+         */ 
+        case 0x03: // INC BC
+            setBC(getBC() + 1);
+            break;
+            
 
-        // 16-bit Arithmetic Instructions
+        case 0x13: // INC DE
+            setDE(getDE() + 1);
+            break;
+        
+        case 0x23: // INC HL
+            setHL(getHL() + 1);
+            break;
 
+        case 0x09: // ADD HL, BC
+            ADD16(getBC());
+            break;
 
+        case 0x19: // ADD HL, DE
+            ADD16(getDE());
+            break;
 
-        // Bitwise Logic Instructions
+        case 0x29: // ADD HL, HL
+            ADD16(getHL());
+            break;
+    
+
+        case 0x0B: // DEC BC
+            setBC(getBC() - 1);
+            break;
+
+        case 0x1B: // DEC DE
+            setDE(getDE() - 1);
+            break;
+
+        case 0x2B: // DEC HL
+            setHL(getHL() - 1);
+            break;
+
+        /**
+         * Bitwise Logic Instructions
+         */
+        case 0x2F: // CPL
+            registers[REG_A] = ~registers[REG_A];
+            setN(true);
+            setH(true);
+            break;
 
         case 0xA0: // AND A, B
             AND(registers[REG_B]);
@@ -652,23 +931,261 @@ void CPU::executeInstruction(uint8_t opcode) {
             pc++;
             break;
 
-        // Bit Flag Instructions
+        /**
+         * Jumps and Subroutine Instructions
+         */
+        case 0x18: // JR i8
+            JR(true);
+            break;
+
+        case 0x20: // JR NZ, i8
+            JR(!getZ());
+            break;
+
+        case 0x28: // JR Z, i8
+            JR(getZ());
+            break;
+
+        case 0x30: // JR NC, i8
+            JR(!getC());
+            break;
+
+        case 0x38: // JR C, i8
+            JR(getC());
+            break;
+
+        case 0xC4: // CALL NZ, u16
+            CALL(!getZ());
+            break;
+
+        case 0xCC: // CALL Z
+            CALL(getZ());
+            break;
+
+        case 0xCD: // CALL u16
+            CALL(true);
+            break;
+
+        case 0xD4: // CALL NC
+            CALL(!getC());
+            break;
+
+        case 0xDC: // CALL C
+            CALL(getC());
+            break;
+
+        case 0xC2: // JP NZ, u16
+            JP(!getZ());
+            break;
+
+        case 0xC3: // JP u16
+            JP(true);
+            break;
+
+        case 0xCA: // JP Z
+            JP(getZ());
+            break;
+
+        case 0xD2: // JP NC, u16
+            JP(!getC());
+            break;
+
+        case 0xDA: // JP C, u16
+            JP(getC());
+            break;
+
+        case 0xE9: // JP HL
+            pc = getHL();
+            break;
+
+        case 0xC0: // RET NZ
+            RET(!getZ());
+            break;
+
+        case 0xC8: // RET Z
+            RET(getZ());
+            break;
+
+        case 0xC9: // RET
+            RET(true);
+            break;
+
+        case 0xD0: // RET NC
+            RET(!getC());
+            break;
+
+        case 0xD8: // RET C
+            RET(getC());
+            break;
+
+        case 0xD9: // RETI
+            RET(true);
+
+            ime = true;
+            break;
+        
+        case 0xC7: // RST 00h
+            RST(0x00);
+            break;
+        
+        case 0xCF: // RST 08h
+            RST(0x08);
+            break;
+
+        case 0xD7: // RST 10h
+            RST(0x10);
+            break;
+
+        case 0xDF: // ST 18h
+            RST(0x18);
+            break;
+            
+        case 0xE7: // RST 20h
+            RST(0x20);
+            break;
+
+        case 0xEF: // RST 28h
+            RST(0x28);
+            break;
+
+        case 0xF7: // RST 30h
+            RST(0x30);
+            break;
+
+        case 0xFF: // RST 38h
+            RST(0x38);
+            break;
+
+        /**
+         * Carry Flag Instructions
+         */
+        case 0x37: // SCF
+            setC(true);
+            setN(false);
+            setH(false);
+            break;
+
+        case 0x3F: // CCF
+            setC(!getC());
+            setN(false);
+            setH(false);
+            break;
+        
+        /**
+         * Stack Manipulation Instructions
+         */
+        case 0x08: // LD (u16), SP
+            mmu->write16(sp & 0xFF & (mmu->read16(pc)), sp);
+            pc += 2;
+            break;
+
+        case 0x31: // LD SP, u16
+            sp = mmu->read16(pc);
+            pc += 2;
+            break;        
+
+        case 0x33: // INC SP
+            sp++;
+            break;
+        
+        case 0x39: // ADD HL, SP
+            ADD16(sp);
+            break;
 
 
+        case 0x3B: // DEC SP
+            sp--;
+            break;
 
-        // Bit Shift Instructions
+        case 0xC1: // POP BC
+            setBC(mmu->read16(sp));
+            sp += 2;
+            break;
+
+        case 0xC5: // PUSH BC
+            sp -= 2;
+            mmu->write16(sp, getBC());
+            break;
 
 
-        // Jumps and Subroutine Instructions
+        case 0xD1: // POP DE
+            setDE(mmu->read16(sp));
+            sp += 2;      
+            break;
 
+        case 0xD5: // PUSH DE
+            sp -= 2;
+            mmu->write16(sp, getDE());
+            break;
 
-        // Carry Flag Instructions
+        case 0xE1: // POP HL
+            setHL(mmu->read16(sp));
+            sp += 2;
+            break;
 
-        // Stack Manipulation Instructions
+        case 0xE5: // PUSH HL
+            sp -= 2;
+            mmu->write16(sp, getHL());
+            break;
+        
 
-        // IE Instructions
+        case 0xE8: // ADD SP, i8
+        {
+            int8_t val = mmu->read8(pc);
+            
+            setZ(false);
+            setN(false);
+            setH(((sp & 0xF) + (val  & 0xF)) > 0xF);
+            setC((sp + val) > 0xFF);
 
+            sp += val;
+            pc++;
+        }
 
+        case 0xF1: // POP AF
+            setAF(mmu->read16(sp));
+            sp += 2;
+            break;
+
+        case 0xF5: // PUSH AF
+            sp -= 2;
+            mmu->write16(sp, getAF());
+            break;
+
+        case 0xF8: // LD HL, SP + i8
+        {
+            int8_t val = mmu->read8(pc);
+
+            setZ(false);
+            setN(false);
+            setH(((sp & 0xF) + (val  & 0xF)) > 0xF);
+            setC((sp + val) > 0xFF);
+
+            setHL(mmu->read16(sp) + val);
+            pc++;
+        }
+            break;
+
+        case 0xF9: // LD SP, HL
+            sp = getHL();
+            break;
+
+        
+        /**
+         * IE Instructions
+         */
+
+        case 0x76: // HALT | TODO
+            halt = true;
+            break;
+
+        case 0xF3: // DI
+            ime = false;
+            break;
+
+        case 0xFB: // EI
+            ime = true;
+            break;
 
 
         default:
@@ -773,16 +1290,43 @@ bool CPU::getC()
 
 
 uint16_t CPU::getBC() {
-    return registers[REG_B] << 8 | registers[REG_C];
+    return (registers[REG_B] << 8) | registers[REG_C];
 }
 
 uint16_t CPU::getDE() {
-    return registers[REG_D] << 8 | registers[REG_E];
+    return (registers[REG_D] << 8) | registers[REG_E];
 }
 
 uint16_t CPU::getHL() {
-    return registers[REG_H] << 8 | registers[REG_L];
+    return (registers[REG_H] << 8) | registers[REG_L];
 }
+
+uint16_t CPU::getAF()
+{
+    return (registers[REG_A] << 8) | registers[REG_F];
+}
+
+
+void CPU::setBC(uint16_t val) {
+    registers[REG_B] = (val >> 8) & 0xFF;
+    registers[REG_C] = val & 0xFF;
+}
+
+void CPU::setDE(uint16_t val) {
+    registers[REG_D] = (val >> 8) & 0xFF;
+    registers[REG_E] = val & 0xFF;
+}
+
+void CPU::setHL(uint16_t val) {
+    registers[REG_H] = (val >> 8) & 0xFF;
+    registers[REG_L] = val & 0xFF;
+}
+
+void CPU::setAF(uint16_t val) {
+    registers[REG_A] = (val >> 8) & 0xFF;
+    registers[REG_F] = val & 0xFF;
+}
+
 
 
 void CPU::RET(bool condition) {
@@ -800,17 +1344,17 @@ void CPU::CALL(bool condition) {
     uint16_t address = mmu->read16(pc);
     pc += 2;
     if (condition) {
-        mmu->write8(--sp, (pc >> 8) & 0xFF);
-        mmu->write8(--sp, pc & 0xFF);
+        sp -= 2;
+        mmu->write16(sp, pc);
 
-        // Impliciet jump
+        // Implicit jump
         pc = address;
     }
 }
 
 void CPU::RST(uint8_t vec) {
-    mmu->write8(--sp, (pc >> 8) & 0xFF);
-    mmu->write8(--sp, pc & 0xFF);
+    sp -= 2;
+    mmu->write16(sp, pc);
     pc = vec;
 }
 
@@ -821,6 +1365,14 @@ void CPU::JP(bool condition) {
         pc += 2;
     }
 }
+
+void CPU::JR(bool condition) {
+    if (condition) {
+        pc += mmu->read8(pc);
+    }
+    pc++;
+}
+
 
 uint8_t CPU::INC8(uint8_t val) {
     setN(false);
@@ -986,7 +1538,7 @@ uint8_t CPU::RLC(uint8_t val) {
     uint8_t carry = (val & 0x80) >> 7;
     uint8_t res = (val << 1) | carry;
 
-    setC((val & 0x80) != 0);
+    setC(carry != 0);
     setN(false);
     setH(false);
     setZ(res == 0);
@@ -1070,4 +1622,3 @@ void CPU::BIT(uint8_t pos, uint8_t reg) {
     setH(true);
     setZ((reg & (0x01 << pos)) == 0);
 }
-

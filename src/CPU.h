@@ -60,12 +60,20 @@ class CPU {
         uint16_t getBC();
         uint16_t getDE();
         uint16_t getHL();
+        uint16_t getAF();
 
-        // Generic Instructions
+        // 16-bit flag registers setters
+        void setBC(uint16_t val);
+        void setDE(uint16_t val);
+        void setHL(uint16_t val);
+        void setAF(uint16_t val);
+
+        // Jump and Subroutine Instructions
         void RET(bool condition);
         void CALL(bool condition);
         void RST(uint8_t vec);
         void JP(bool condition);
+        void JR(bool condition);
 
         // Arithmic Operations
         uint8_t INC8(uint8_t val);
