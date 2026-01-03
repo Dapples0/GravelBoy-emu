@@ -6,7 +6,7 @@
 int main() {
     gb gb;
 
-    gb.run("rom/11-op a,(hl).gb");
+    gb.run("rom/02-interrupts.gb");
 
 
 

@@ -18,21 +18,24 @@ void CPU::connect(MMU *mmu) {
 
 void CPU::execute() {
     
-    
-    // if (!halt) {
-    uint8_t opcode = mmu->read8(pc);     
-
-    // std::cout << "opcode: " << (int)opcode << "\n" << "pc: " << pc << "\n";    
+    handleInterrupts();
+    if (!halt) {
+        uint8_t opcode = mmu->read8(pc);     
         executeInstruction(opcode);
-    // }
-    i++;
+        cycles += cyclesPassed;
+
+    } else {
+        cycles += 4;
+    }
     
     
 }
 
 void CPU::executeInstruction(uint8_t opcode) {
-    pc++;
 
+    pc++;
+    
+    cyclesPassed = opcodeCycles[opcode];
     switch (opcode) {
         case 0xCB: // 0xCB Prefixed
             executeCBInstruction(mmu->read8(pc));
@@ -1012,6 +1015,9 @@ void CPU::executeInstruction(uint8_t opcode) {
 
         case 0xC9: // RET
             RET(true);
+
+            // Unconditonal RET has cycles be 16
+            cyclesPassed = 16;
             break;
 
         case 0xD0: // RET NC
@@ -1023,9 +1029,15 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0xD9: // RETI
+            // Essentially an EI then RET instruction, so ei_hold can be ignored
+            ime = true;
+            ei_hold = false;
+
             RET(true);
 
-            ime = true;
+
+            // Unconditonal RETI has cycles be 16
+            cyclesPassed = 16;
             break;
         
         case 0xC7: // RST 00h
@@ -1179,16 +1191,22 @@ void CPU::executeInstruction(uint8_t opcode) {
          * IE Instructions
          */
 
-        case 0x76: // HALT | TODO
+        case 0x76: // HALT
             halt = true;
+
+
+            // Halt Bug
+            if (!ime && ((mmu->read8(IE_ADDRESS) & mmu->read8(IF_ADDRESS)) != 0)) {
+            }
             break;
 
         case 0xF3: // DI
             ime = false;
+            ei_hold = false;
             break;
 
         case 0xFB: // EI
-            ime = true;
+            ei_hold = true;
             break;
 
 
@@ -1200,6 +1218,7 @@ void CPU::executeInstruction(uint8_t opcode) {
 
 void CPU::executeCBInstruction(uint8_t opcode) {
     pc++;
+    cyclesPassed = opcodeCBCycles[opcode];
     switch (opcode) {
         /**
          * RLC Instructions 
@@ -2177,6 +2196,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
 void CPU::setState(int mode)
 {
     resetGB();
+    CGBMode = false;
     // CGBMode = mode;
     
     // if (!mode) {
@@ -2317,6 +2337,8 @@ void CPU::RET(bool condition) {
         uint8_t high = mmu->read8(sp++);
         pc = (high << 8) | low;
         
+        // With condition cycles passed is 20
+        cyclesPassed = 20;
         // pc = mmu->read8(sp++);
         // sp += 2;
     }
@@ -2331,6 +2353,9 @@ void CPU::CALL(bool condition) {
 
         // Implicit jump
         pc = address;
+
+        // With condition cycles passed is 12
+        cyclesPassed = 24;
     }
 }
 
@@ -2343,6 +2368,9 @@ void CPU::RST(uint8_t vec) {
 void CPU::JP(bool condition) {
     if (condition) {
         pc = mmu->read16(pc);
+
+        // With condition cycles passed is 16
+        cyclesPassed = 16;
     } else {
         pc += 2;
     }
@@ -2351,6 +2379,9 @@ void CPU::JP(bool condition) {
 void CPU::JR(bool condition) {
     if (condition) {
         pc += (int8_t)mmu->read8(pc);
+
+        // With condition cycles passed is 12
+        cyclesPassed = 12;
     }    
     pc++;
 
@@ -2637,4 +2668,81 @@ std::string CPU::debug() {
         << std::dec << "\n";
 
     return ss.str();
+}
+
+bool CPU::getDoubleSpeed()
+{
+    return doubleSpeed;
+}
+
+void CPU::handleInterrupts() {
+    uint8_t iFlag = mmu->read8(IF_ADDRESS);
+    uint8_t ie = mmu->read8(IE_ADDRESS);
+    
+    if (ei_hold) {
+        ime = true;
+        ei_hold = false;
+        return;
+    }
+
+    // vBlank
+    if ((iFlag & VBLANK_BIT) != 0 && (ie & VBLANK_BIT) != 0) {
+        halt = false;
+        if (ime) {
+            ime = false;
+            ei_hold = false;
+            mmu->write8(IF_ADDRESS, iFlag & ~VBLANK_BIT);
+
+            cycles += 20;
+            RST(VBLANK_INT);
+        }
+    } 
+    // LCD
+    else if ((iFlag & LCD_BIT) != 0 && (ie & LCD_BIT) != 0) {
+        halt = false;
+        if (ime) {
+            ime = false;
+            ei_hold = false;
+            mmu->write8(IF_ADDRESS, iFlag & ~LCD_BIT);
+
+            cycles += 20;
+            RST(STAT_INT);
+        }
+    } 
+    // Timer
+    else if ((iFlag & TIMER_BIT) != 0 && (ie & TIMER_BIT) != 0) {
+        halt = false;
+        if (ime) {
+            ime = false;
+            ei_hold = false;
+            mmu->write8(IF_ADDRESS, iFlag & ~TIMER_BIT);
+
+            cycles += 20;
+            RST(TIMER_INT);
+        }
+    }
+    // Serial
+    else if ((iFlag & SERIAL_BIT) != 0 && (ie & SERIAL_BIT) != 0) {
+        halt = false;
+        if (ime) {
+            ime = false;
+            ei_hold = false;
+            mmu->write8(IF_ADDRESS, iFlag & ~SERIAL_BIT);
+
+            cycles += 20;
+            RST(SERIAL_INT);
+        }
+    }
+    // Joypad
+    else if ((iFlag & JOYPAD_BIT) != 0 && (ie & JOYPAD_BIT) != 0) {
+        halt = false;
+        if (ime) {
+            ime = false;
+            ei_hold = false;
+            mmu->write8(IF_ADDRESS, iFlag & ~JOYPAD_BIT);
+
+            cycles += 20;
+            RST(JOYPAD_INT);
+        }
+    } 
 }

@@ -17,4 +17,17 @@
 #define REG_H 6
 #define REG_L 7
 
+#define IE_ADDRESS 0xFFFF
+#define IF_ADDRESS 0xFF0F
+
+#define VBLANK_BIT 0x01
+#define LCD_BIT 0x02
+#define TIMER_BIT 0x04
+#define SERIAL_BIT 0x08
+#define JOYPAD_BIT 0x10
+#define VBLANK_INT 0x40
+#define STAT_INT 0x48
+#define TIMER_INT 0x50
+#define SERIAL_INT 0x58
+#define JOYPAD_INT 0x60
 #endif

@@ -1,7 +1,7 @@
 #ifndef MBC1_H
 #define MB1C_H
 
-#include "../constants.h"
+#include "../../constants.h"
 
 #include "../Cartridge.h"
 

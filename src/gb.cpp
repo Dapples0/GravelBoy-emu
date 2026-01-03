@@ -2,16 +2,18 @@
 #include <iostream>
 #include <fstream>
 
-gb::gb() {
-    cpu = CPU();
-    apu = APU();
-    gpu = GPU();
-    joypad = Joypad();
-    mmu = MMU();
-    timer = Timer();
+gb::gb() : cpu(), apu(), gpu(), joypad(), mmu(), timer() {
+    // cpu = CPU();
+    // apu = APU();
+    // gpu = GPU();
+    // joypad = Joypad();
+    // mmu = MMU();
+    // timer = Timer();
 
     cpu.connect(&mmu);
     mmu.connect(&gpu, &joypad, &timer, &apu);
+    // timer.connect(&mmu);
+    
 }
 
 gb::~gb()

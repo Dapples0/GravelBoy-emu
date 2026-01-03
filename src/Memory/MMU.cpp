@@ -1,25 +1,22 @@
 #include "MMU.h"
-#include "MBC/NOMBC.h"
-#include "MBC/MBC1.h"
 
 #include <fstream>
 #include <iostream>
 #include <ios>
 
-// MMU::MMU()
-// {
-// }
+MMU::MMU()
+{
+}
 
-// MMU::~MMU()
-// {
-// }
+MMU::~MMU()
+{
+}
 
 void MMU::connect(GPU *gpu, Joypad *joypad, Timer *timer, APU *apu) {
     this->gpu = gpu;
     this->joypad = joypad;
     this->timer = timer;
     this->apu = apu;
-
 }
 
 bool MMU::loadRom(const char *filename) {
@@ -162,10 +159,9 @@ uint8_t MMU::read8(uint16_t address)
         return 0x0;
     }
 
-    // Interrupts TODO
+    // IF
     if (address == 0xFF0F) {
-        return 0x0;
-
+        return IF;
     }
 
     // Audio TODO
@@ -209,7 +205,7 @@ uint8_t MMU::read8(uint16_t address)
     }
     // IE
     if (address == 0xFFFF) {
-        return 0x0;
+        return IE;
     }
 
     // Invalid Read
@@ -266,9 +262,10 @@ void MMU::write8(uint16_t address, uint8_t data) {
     else if (address >= 0xFF04 && address <= 0xFF07) {
 
     }
-    // Interrupts TODO
-    else if (address == 0xFF0F) {
 
+    // IF
+    else if (address == 0xFF0F) {
+        IF = data;
     }
     // Audio TODO
     else if (address >= 0xFF10 && address <= 0xFF3F) {
@@ -300,7 +297,9 @@ void MMU::write8(uint16_t address, uint8_t data) {
         }
     }
     // IE
-    else if (address == 0xFFFF) {}
+    else if (address == 0xFFFF) {
+        IE = data;
+    }
 }
 
 void MMU::write16(uint16_t address, uint16_t data)
@@ -353,4 +352,20 @@ void MMU::writeWRAM(uint16_t address, uint8_t data) {
         }
         wram[bank][relative_address] = data;
     }
+}
+
+uint8_t MMU::getIF() {
+    return this->IF;
+}
+
+uint8_t MMU::getIE() {
+    return this->IE;
+}
+
+void MMU::setIF(uint8_t val) {
+    this->IF = val;
+}
+
+void MMU::setIE(uint8_t val) {
+    this->IE = val;
 }

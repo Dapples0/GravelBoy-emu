@@ -5,18 +5,20 @@
 #include <array>
 #include <memory>
 
-#include "constants.h"
-#include "APU.h"
-#include "GPU.h"
-#include "Joypad.h"
-#include "Cartridge.h"
-#include "Timer.h"
+#include "../constants.h"
+#include "../APU/APU.h"
+#include "../GPU/GPU.h"
+#include "../IO/Joypad.h"
+#include "../Cartridge/Cartridge.h"
+#include "../IO/Timer.h"
+#include "../Cartridge/MBC/NOMBC.h"
+#include "../Cartridge/MBC/MBC1.h"
 
 
 class MMU {
     public:
-        // MMU();
-        // ~MMU();
+        MMU();
+        ~MMU();
 
         void connect(GPU *gpu, Joypad *joypad, Timer *timer, APU *apu);
         bool loadRom(const char *filename);
@@ -24,6 +26,11 @@ class MMU {
         uint16_t read16(uint16_t address);
         void write8(uint16_t address, uint8_t data);
         void write16(uint16_t address, uint16_t data);
+
+        uint8_t getIF();
+        uint8_t getIE();
+        void setIF(uint8_t val);
+        void setIE(uint8_t val);
     private:
         std::unique_ptr<Cartridge> rom; // ROM Banks + External RAM
         GPU *gpu; // VRAM + Echo RAM + OAM
@@ -43,8 +50,8 @@ class MMU {
         std::array<uint8_t, 0x7F> hram;
 
         // Interrupt Enable Registers
-        uint8_t ie = 0x00;
-        uint8_t ieFlag = 0x00;
+        uint8_t IF = 0x00;
+        uint8_t IE = 0x00;
 
         // CGB Flag -> also present in CPU
         bool cgb;
