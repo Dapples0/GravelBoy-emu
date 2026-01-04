@@ -2,16 +2,18 @@
 #include <iostream>
 #include <fstream>
 
-gb::gb() {
-    cpu = CPU();
-    apu = APU();
-    gpu = GPU();
-    joypad = Joypad();
-    mmu = MMU();
-    timer = Timer();
+gb::gb() : cpu(), apu(), gpu(), joypad(), mmu(), timer(), interrupt() {
+    // cpu = CPU();
+    // apu = APU();
+    // gpu = GPU();
+    // joypad = Joypad();
+    // mmu = MMU();
+    // timer = Timer();
 
     cpu.connect(&mmu);
-    mmu.connect(&gpu, &joypad, &timer, &apu);
+    mmu.connect(&gpu, &joypad, &timer, &apu, &interrupt);
+    timer.connect(&interrupt);
+    
 }
 
 gb::~gb()
@@ -23,14 +25,18 @@ void gb::run(const char *filename) {
 
     std::cout << "--------------------------------\n";
     cpu.setState(mode);
-    std::ofstream file("cpu_debug.txt");
+    std::ofstream file("logs/cpu_debug.txt");
     uint32_t i = 0;
     while (1) {
         // if (i <= 325820) {
             file << cpu.debug();
         // }
         
-        cpu.execute();
+        uint32_t cyclesPassed = cpu.execute();
+        if (cpu.getDoubleSpeed()) {
+        } 
+        timer.tick(cyclesPassed);
+        
         i++;
     }
 

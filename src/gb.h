@@ -1,12 +1,15 @@
 #ifndef GB_H
 #define GB_h
 
-#include "APU.h"
-#include "CPU.h"
-#include "GPU.h"
-#include "Joypad.h"
-#include "MMU.h"
-#include "Cartridge.h"
+#include "APU/APU.h"
+#include "CPU/CPU.h"
+#include "GPU/GPU.h"
+#include "IO/Joypad.h"
+#include "Memory/MMU.h"
+#include "Cartridge/Cartridge.h"
+#include "IO/Timer.h"
+#include "IO/Interrupts.h"
+
 
 
 class gb {
@@ -25,6 +28,7 @@ class gb {
         Joypad joypad;
         MMU mmu;
         Timer timer;
+        Interrupts interrupt;
 
 };
 

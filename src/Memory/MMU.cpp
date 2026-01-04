@@ -1,25 +1,23 @@
 #include "MMU.h"
-#include "MBC/NOMBC.h"
-#include "MBC/MBC1.h"
 
 #include <fstream>
 #include <iostream>
 #include <ios>
 
-// MMU::MMU()
-// {
-// }
+MMU::MMU()
+{
+}
 
-// MMU::~MMU()
-// {
-// }
+MMU::~MMU()
+{
+}
 
-void MMU::connect(GPU *gpu, Joypad *joypad, Timer *timer, APU *apu) {
+void MMU::connect(GPU *gpu, Joypad *joypad, Timer *timer, APU *apu, Interrupts *interrupt) {
     this->gpu = gpu;
     this->joypad = joypad;
     this->timer = timer;
     this->apu = apu;
-
+    this->interrupt = interrupt;
 }
 
 bool MMU::loadRom(const char *filename) {
@@ -159,13 +157,12 @@ uint8_t MMU::read8(uint16_t address)
 
     // Timer and Divider TODO
     if (address >= 0xFF04 && address <= 0xFF07) {
-        return 0x0;
+        return timer->read(address);
     }
 
-    // Interrupts TODO
+    // IF
     if (address == 0xFF0F) {
-        return 0x0;
-
+        return this->interrupt->getIF();
     }
 
     // Audio TODO
@@ -209,7 +206,7 @@ uint8_t MMU::read8(uint16_t address)
     }
     // IE
     if (address == 0xFFFF) {
-        return 0x0;
+        return this->interrupt->getIE();
     }
 
     // Invalid Read
@@ -264,11 +261,12 @@ void MMU::write8(uint16_t address, uint8_t data) {
     }
     // Timer and Divider TODO
     else if (address >= 0xFF04 && address <= 0xFF07) {
-
+        timer->write(address, data);
     }
-    // Interrupts TODO
-    else if (address == 0xFF0F) {
 
+    // IF
+    else if (address == 0xFF0F) {
+        this->interrupt->setIF(data);
     }
     // Audio TODO
     else if (address >= 0xFF10 && address <= 0xFF3F) {
@@ -300,7 +298,9 @@ void MMU::write8(uint16_t address, uint8_t data) {
         }
     }
     // IE
-    else if (address == 0xFFFF) {}
+    else if (address == 0xFFFF) {
+        this->interrupt->setIE(data);
+    }
 }
 
 void MMU::write16(uint16_t address, uint16_t data)

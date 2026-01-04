@@ -4,7 +4,7 @@
 #include <vector>
 #include <array>
 
-#include "constants.h"
+#include "../constants.h"
 
 class Cartridge {
     public:
