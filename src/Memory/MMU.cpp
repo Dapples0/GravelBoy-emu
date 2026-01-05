@@ -382,6 +382,7 @@ void MMU::tick(uint8_t val) {
     //     timer->tick(1);
     // }
     timer->tick(4);
+    cycles += 4;
 }
 
 

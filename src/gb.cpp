@@ -35,7 +35,7 @@ void gb::run(const char *filename) {
         cpu.execute();
         if (cpu.getDoubleSpeed()) {
         } 
-        
+
         i++;
     }
 

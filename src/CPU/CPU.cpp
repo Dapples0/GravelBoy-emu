@@ -1121,6 +1121,7 @@ void CPU::executeInstruction(uint8_t opcode) {
 
         case 0xC5: // PUSH BC
             sp -= 2;
+            mmu->tick(4);
             mmu->write16(sp, getBC());
             break;
 
@@ -1132,6 +1133,7 @@ void CPU::executeInstruction(uint8_t opcode) {
 
         case 0xD5: // PUSH DE
             sp -= 2;
+            mmu->tick(4);
             mmu->write16(sp, getDE());
             break;
 
@@ -1142,6 +1144,7 @@ void CPU::executeInstruction(uint8_t opcode) {
 
         case 0xE5: // PUSH HL
             sp -= 2;
+            mmu->tick(4);
             mmu->write16(sp, getHL());
             break;
         
@@ -1166,6 +1169,7 @@ void CPU::executeInstruction(uint8_t opcode) {
 
         case 0xF5: // PUSH AF
             sp -= 2;
+            mmu->tick(4);
             mmu->write16(sp, getAF());
             break;
 
@@ -1194,7 +1198,6 @@ void CPU::executeInstruction(uint8_t opcode) {
 
         case 0x76: // HALT
             halt = true;
-
             break;
 
         case 0xF3: // DI
@@ -2435,7 +2438,7 @@ void CPU::ADD16(uint16_t val) {
     setN(false);
     setC(res > 0xFFFF);
     setH(((getHL() & 0x0FFF) + (val & 0x0FFF)) > 0x0FFF);
-
+    mmu->tick(4);
     // Set H and L registers
     setHL(res);
 }
