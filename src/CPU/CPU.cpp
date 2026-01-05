@@ -38,8 +38,9 @@ void CPU::execute() {
 void CPU::executeInstruction(uint8_t opcode) {
 
     pc++;
-    
-    // cyclesPassed = opcodeCycles[opcode];
+    op = opcode;
+    cb = false;
+    cyclesPassed = opcodeCycles[opcode];
     switch (opcode) {
         case 0xCB: // 0xCB Prefixed
             executeCBInstruction(mmu->read8(pc));
@@ -89,13 +90,15 @@ void CPU::executeInstruction(uint8_t opcode) {
                 return;
             }
             uint8_t key1 = mmu->read8(0xFF4D);
+            cyclesPassed += 4;
             // If armed switch to other mode
             if ((key1 & 0x01) == 0x01) {
                 
                 doubleSpeed = !doubleSpeed;
 
                 // Clear bit0 and set speed
-                ((key1 & 0x80) == 0x80) ? mmu->write8(0xFF4D, 0x00) : mmu->write8(0xFF4D, 0x80);   
+                ((key1 & 0x80) == 0x80) ? mmu->write8(0xFF4D, 0x00) : mmu->write8(0xFF4D, 0x80);
+                cyclesPassed += 4;
             }
 
             pc++;            
@@ -774,15 +777,15 @@ void CPU::executeInstruction(uint8_t opcode) {
     
 
         case 0x0B: // DEC BC
-            setBC(getBC() - 1);
+            setBC(DEC16(getBC()));
             break;
 
         case 0x1B: // DEC DE
-            setDE(getDE() - 1);
+            setDE(DEC16(getDE()));
             break;
 
         case 0x2B: // DEC HL
-            setHL(getHL() - 1);
+            setHL(DEC16(getHL()));
             break;
 
         /**
@@ -1022,7 +1025,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             RETUNC();
 
             // Unconditonal RET has cycles be 16
-            // cyclesPassed = 16;
+            cyclesPassed = 16;
             break;
 
         case 0xD0: // RET NC
@@ -1043,7 +1046,7 @@ void CPU::executeInstruction(uint8_t opcode) {
 
 
             // Unconditonal RETI has cycles be 16
-            // cyclesPassed = 16;
+            cyclesPassed = 16;
             break;
         
         case 0xC7: // RST 00h
@@ -1118,6 +1121,7 @@ void CPU::executeInstruction(uint8_t opcode) {
 
         case 0x3B: // DEC SP
             sp--;
+            mmu->tick(4);
             break;
 
         case 0xC1: // POP BC
@@ -1164,7 +1168,11 @@ void CPU::executeInstruction(uint8_t opcode) {
             setH(((sp & 0x0F) + (val & 0x0F)) > 0x0F);
             setC(((sp & 0xFF) + val) > 0xFF);
 
+            //TODO might not be in correct place
+            mmu->tick(4);
             sp += (int8_t)val;
+
+            mmu->tick(4);
             pc++;
         }
             break;
@@ -1190,11 +1198,13 @@ void CPU::executeInstruction(uint8_t opcode) {
 
             setHL(sp + (int8_t)val);
             pc++;
+            mmu->tick(4);
         }
             break;
 
         case 0xF9: // LD SP, HL
             sp = getHL();
+            mmu->tick(4);
             break;
 
         
@@ -1224,7 +1234,9 @@ void CPU::executeInstruction(uint8_t opcode) {
 
 void CPU::executeCBInstruction(uint8_t opcode) {
     pc++;
-    // cyclesPassed = opcodeCBCycles[opcode];
+    op = opcode;
+    cb = true;
+    cyclesPassed = opcodeCBCycles[opcode];
     switch (opcode) {
         /**
          * RLC Instructions 
@@ -2343,9 +2355,9 @@ void CPU::RET(bool condition) {
         uint8_t low = mmu->read8(sp++);
         uint8_t high = mmu->read8(sp++);    
         pc = (high << 8) | low;
-        
+        mmu->tick(4);
         // With condition cycles passed is 20
-        // cyclesPassed = 20;
+        cyclesPassed = 20;
         // pc = mmu->read8(sp++);
         // sp += 2;
     }
@@ -2370,7 +2382,7 @@ void CPU::CALL(bool condition) {
         pc = address;
 
         // With condition cycles passed is 12
-        // cyclesPassed = 24;
+        cyclesPassed = 24;
     }
     
 }
@@ -2388,7 +2400,7 @@ void CPU::JP(bool condition) {
         mmu->tick(4);
         pc = addr;
         // With condition cycles passed is 16
-        // cyclesPassed = 16;
+        cyclesPassed = 16;
     } else {
         pc += 2;
     }
@@ -2397,11 +2409,10 @@ void CPU::JP(bool condition) {
 void CPU::JR(bool condition) {
     int8_t addr = (int8_t)mmu->read8(pc);
     if (condition) {
-        
         pc += addr;
         mmu->tick(4);
         // With condition cycles passed is 12
-        // cyclesPassed = 12;
+        cyclesPassed = 12;
     }    
     pc++;
 
@@ -2708,7 +2719,7 @@ bool CPU::getDoubleSpeed()
 
 void CPU::handleInterrupts() {
 
-
+    interruptCycles = 0;
     uint8_t iFlag = mmu->getIF();
     uint8_t ie = mmu->getIE();
     uint8_t pending = iFlag & ie;
@@ -2755,6 +2766,6 @@ void CPU::handleInterrupts() {
     // Set address to handler
     pc = address;
     mmu->tick(4);
-
+    interruptCycles = 20;
 
 }
