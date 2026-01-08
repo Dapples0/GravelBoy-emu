@@ -11,7 +11,7 @@ gb::gb() : cpu(), apu(), gpu(), joypad(), mmu(), timer(), interrupt() {
     // mmu = MMU();
     // timer = Timer();
 
-    cpu.connect(&mmu);
+    cpu.connect(&mmu, &timer, &gpu);
     mmu.connect(&gpu, &joypad, &timer, &apu, &interrupt);
     timer.connect(&interrupt);
     
@@ -25,7 +25,7 @@ void gb::run(const char *filename) {
     bool mode = mmu.loadRom(filename);
 
     std::cout << "--------------------------------\n";
-    cpu.setState(mode);
+    cpu.setMode(mode);
     std::ofstream file("logs/cpu_debug.txt");
     uint32_t i = 0;
     while (1) {
@@ -39,17 +39,17 @@ void gb::run(const char *filename) {
 
         // Debugging -> checks if cycles match expected cycles TODO: Remove
         if (cpu.cb) {
-            if ((int)cpu.cyclesPassed + cpu.interruptCycles != mmu.cycles) {
-                std::cout << std::hex << std::uppercase << std::setfill('0') << std::setw(2) << "CB" << (int)cpu.op << " | " << std::dec << mmu.cycles << "-" <<  (int)cpu.cyclesPassed << " \n";
+            if ((int)cpu.cyclesPassed + cpu.interruptCycles != cpu.cycles) {
+                std::cout << std::hex << std::uppercase << std::setfill('0') << std::setw(2) << "CB" << (int)cpu.op << " | " << std::dec << cpu.cycles << "-" <<  (int)cpu.cyclesPassed << " \n";
                 
             }
         } else {
-            if ((int)cpu.cyclesPassed + cpu.interruptCycles != mmu.cycles) {
-                std::cout << std::hex << std::uppercase << std::setfill('0') << std::setw(2) <<  (int)cpu.op << " | " << std::dec << mmu.cycles << "-" <<  (int)cpu.cyclesPassed << " \n";
+            if ((int)cpu.cyclesPassed + cpu.interruptCycles != cpu.cycles) {
+                std::cout << std::hex << std::uppercase << std::setfill('0') << std::setw(2) <<  (int)cpu.op << " | " << std::dec << cpu.cycles << "-" <<  (int)cpu.cyclesPassed << " \n";
             }
         }
         // std::cout << std::dec << "Cycles Used: " << (int)mmu.cycles << "\n";
-        mmu.cycles = 0;
+        cpu.cycles = 0;
         i++;
     }
 

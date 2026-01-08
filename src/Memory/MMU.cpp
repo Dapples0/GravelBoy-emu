@@ -74,12 +74,14 @@ bool MMU::loadRom(const char *filename) {
 
     // Determines MBC Type
     setMBC(type, romData, romSize, sRamSize);
-    this->cgb = cgb == 0xC0 || cgb == 0x80;
+    bool cgbMode = cgb == 0xC0 || cgb == 0x80;
+    this->cgb = cgbMode;
+    this->gpu->setMode(cgbMode);
     // this->cgb = false;
     this->wram = this->cgb 
     ? std::vector<std::vector<uint8_t>>(8, std::vector<uint8_t>(WRAM_BANK_SIZE)) 
     : std::vector<std::vector<uint8_t>>(2, std::vector<uint8_t>(WRAM_BANK_SIZE));
-    return cgb == 0xC0 || cgb == 0x80;
+    return cgbMode;
 
 }
 
@@ -126,7 +128,7 @@ uint8_t MMU::read8(uint16_t address)
     
     // VRAM TODO
     else if (address >= 0x8000 && address <= 0x9FFF) {
-        res = 0x0;
+        res = gpu->readVRAM(address);
     }
 
     // External RAM TODO
@@ -142,7 +144,7 @@ uint8_t MMU::read8(uint16_t address)
 
     // OAM RAM TODO
     else if (address >= 0xFE00 && address <= 0xFE9F) {
-        res = 0x0;
+        res = this->gpu->readOAM(address);
     }
     // High RAM
     else if (address >= 0xFF80 && address <= 0xFFFE) {
@@ -171,34 +173,34 @@ uint8_t MMU::read8(uint16_t address)
 
     }
 
-    // GPU TODO
+    // LCD
     else if (address >= 0xFF40 && address <= 0xFF4B) {
-        res = 0x0;
+        res = this->gpu->readLCD(address);
 
     }
 
-    // OAM DMA transfer TODO
+    // OAM DMA transfer
     else if (address == 0xFF46) {
-        res = 0x0;
+        res = this->gpu->getOAMDMA();
     }
 
     // KEY1
     else if (cgb && address == 0xFF4D) {
         res = key1;
     }
-    // VRAM Bank Select TODO
+    // VRAM Bank Select
     else if (cgb && address == 0xFF4F) {
-        res = 0x0;
+        res = this->gpu->getVRAMBank();
     }
     // Boot ROM Map TODO
     else if (address == 0xFF50) {}
-    // VRAM DMA TODO
+    // VRAM DMA
     else if (cgb && address >= 0xFF51 && address <= 0xFF55) {
-        res = 0x0;
+        res = this->gpu->readVRAMDMA(address);
     }
-    // BG / OBJ Palettes TOOD
+    // BG / OBJ Palettes
     else if (cgb && address >= 0xFF68 && address <= 0xFF6B) {
-        res = 0x0;
+        res = this->gpu->readLCDColour(address);
     }
     // WRAM Bank Select
     else if (cgb && address == 0xFF70) {
@@ -208,13 +210,7 @@ uint8_t MMU::read8(uint16_t address)
     else if (address == 0xFFFF) {
         res = this->interrupt->getIE();
     }
-    tick();
     return res;
-}
-
-uint16_t MMU::read16(uint16_t address)
-{
-    return (read8(address + 1) << 8) | read8(address);
 }
 
 
@@ -224,8 +220,9 @@ void MMU::write8(uint16_t address, uint8_t data) {
     if (address >= 0x0000 && address <= 0x7FFF) {
         this->rom->write(address, data);
     }
-    // VRAM TODO 
+    // VRAM 
     else if (address >= 0x8000 && address <= 0x9FFF) {
+        this->gpu->writeVRAM(address, data);
     }
     // External RAM
     else if (address >= 0xA000 && address <= 0xBFFF) {
@@ -235,8 +232,9 @@ void MMU::write8(uint16_t address, uint8_t data) {
     else if (address >= 0xC000 && address <= 0xFDFF) {
         this->writeWRAM(address, data);
     }
-    // OAM RAM TODO
+    // OAM RAM
     else if (address >= 0xFE00 && address <= 0xFE9F) {
+        this->gpu->writeOAM(address, data);
     }
     // High Ram
     else if (address >= 0xFF80 && address <= 0xFFFE) {
@@ -270,24 +268,32 @@ void MMU::write8(uint16_t address, uint8_t data) {
     else if (address >= 0xFF10 && address <= 0xFF3F) {
 
     }
-    // GPU TODO
+    // LCD TODO
     else if (address >= 0xFF40 && address <= 0xFF4B) {
-
+        this->gpu->setLCD(address, data);
     }
-    // OAM DMA transfer TODO
-    else if (address == 0xFF46) {}
+    // OAM DMA transfer
+    else if (address == 0xFF46) {
+        this->gpu->setOAMDMA(data);
+    }
     // KEY1
     else if (cgb && address == 0xFF4D) {
         key1 = data;
     }
-    // VRAM Bank Select TODO
-    else if (cgb && address == 0xFF4F) {}
+    // VRAM Bank Select
+    else if (cgb && address == 0xFF4F) {
+        this->gpu->setVRAMBank(data & 0x01);
+    }
     // Boot rom map TODO
     else if (address == 0xFF50) {}
-    // VRAM DMA TODO
-    else if (cgb && address >= 0xFF51 && address <= 0xFF55) {}
-    // BG / OBJ Palettes TOOD
-    else if (cgb && address >= 0xFF68 && address <= 0xFF6B) {}
+    // VRAM DMA
+    else if (cgb && address >= 0xFF51 && address <= 0xFF55) {
+        this->gpu->writeVRAMDMA(address, data);
+    }
+    // BG / OBJ Palettes
+    else if (cgb && address >= 0xFF68 && address <= 0xFF6B) {
+        this->gpu->writeLCDColour(address, data);
+    }
     // WRAM Bank Select
     else if (cgb && address == 0xFF70) {
         wramBank = data & 0x07;
@@ -301,14 +307,8 @@ void MMU::write8(uint16_t address, uint8_t data) {
     else if (address == 0xFFFF) {
         this->interrupt->setIE(data);
     }
-    tick();
 }
 
-void MMU::write16(uint16_t address, uint16_t data)
-{
-    write8(address, data & 0xFF); // Low bit
-    write8(address + 1, (data >> 8) & 0xFF); // High bit
-}
 
 uint8_t MMU::readWRAM(uint16_t address) {
     // Echo RAM handling
@@ -375,16 +375,6 @@ void MMU::setIE(uint8_t data)
 {
     this->interrupt->setIE(data);
 }
-
-
-void MMU::tick() {
-    // for (int i = 0; i < val; ++i) {
-    //     timer->tick(1);
-    // }
-    timer->tick();
-    cycles += 4;
-}
-
 
 uint8_t MMU::readPeek(uint16_t address)
 {

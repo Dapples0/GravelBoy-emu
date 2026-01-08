@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <array>
 #include <memory>
+#include <vector>
 
 #include "../constants.h"
 #include "../APU/APU.h"
@@ -24,22 +25,18 @@ class MMU {
         void connect(GPU *gpu, Joypad *joypad, Timer *timer, APU *apu, Interrupts *interrupt);
         bool loadRom(const char *filename);
         uint8_t read8(uint16_t address);
-        uint16_t read16(uint16_t address);
         void write8(uint16_t address, uint8_t data);
-        void write16(uint16_t address, uint16_t data);
 
         uint8_t getIF();
         uint8_t getIE();
         void setIF(uint8_t val);
         void setIE(uint8_t val);
-
-        void tick();
-        int cycles = 0;
+        
         // Debugging read
         uint8_t readPeek(uint16_t address);
     private:
         std::unique_ptr<Cartridge> rom; // ROM Banks + External RAM
-        GPU *gpu; // VRAM + Echo RAM + OAM
+        GPU *gpu; // VRAM + OAM
         Joypad *joypad; // Input
         Timer *timer; // Timer
         APU *apu;

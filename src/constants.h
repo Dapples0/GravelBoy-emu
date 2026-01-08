@@ -2,11 +2,16 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#define SCREEN_WIDTH 160
+#define SCREEN_HEIGHT 144
+
+
 #define ROM_BANK_SIZE 0x4000
 #define WRAM_BANK_SIZE 0x1000
 #define SRAM_BANK_SIZE 0x2000
 #define SRAM_UNUSED_BANK_SIZE 0x800
-#define WRAM_OFFSET 0xC000
+#define VRAM_BANK_SIZE 0x2000
+#define OAM_BANK_SIZE 0xA0
 
 #define REG_A 0
 #define REG_F 1

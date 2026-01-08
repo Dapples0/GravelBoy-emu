@@ -2,14 +2,16 @@
 #define CPU_H
 
 #include "../Memory/MMU.h"
+#include "../IO/Timer.h"
+#include "../GPU/GPU.h"
 
 class CPU {
     public:
         CPU();
         ~CPU();
 
-        void connect(MMU *mmu);
-        void setState(int mode);
+        void connect(MMU *mmu, Timer *timer, GPU *gpu);
+        void setMode(bool mode);
         void execute();
 
         std::string debug();
@@ -19,6 +21,7 @@ class CPU {
         uint8_t op;
         bool cb;
         uint32_t cyclesPassed;
+        uint32_t cycles = 0;
         uint32_t interruptCycles;
         std::array<uint8_t, 256> opcodeCycles = {
             4, 12, 8, 8, 4, 4, 8, 4, 20, 8, 8, 8, 4, 4, 8, 4, 
@@ -61,7 +64,7 @@ class CPU {
     private:
         MMU *mmu;
         Timer *timer;
-        
+        GPU *gpu;
 
         /** GP Registers
          * 0 - A
@@ -86,9 +89,6 @@ class CPU {
         bool ei_hold = false;
 
 
-        // Cycle handling
-        uint32_t cycles = 0;
-
         int CGBMode;
         bool doubleSpeed;
 
@@ -99,7 +99,12 @@ class CPU {
     
         void handleInterrupts();
 
-    
+        void tick();
+        uint8_t read8(uint16_t address);
+        uint16_t read16(uint16_t address);
+        void write8(uint16_t address, uint8_t data);
+        void write16(uint16_t address, uint16_t data);
+ 
         // Set Flag Registers
         void setZ(bool set);
         void setN(bool set);
