@@ -1,7 +1,9 @@
-#include "gb.h"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+
+#include "gb.h"
+#include <SDL2/SDL.h>
 
 gb::gb() : cpu(), apu(), gpu(), joypad(), mmu(), timer(), interrupt() {
     // cpu = CPU();
@@ -26,16 +28,34 @@ void gb::run(const char *filename) {
 
     std::cout << "--------------------------------\n";
     cpu.setMode(mode);
+
+    // Initialise SDL
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER)) {
+        std::cerr << "Could not initialise SDL\n";
+        exit(1);
+    }
+    gpu.attatchSDL();
+    SDL_Event event;
+
     std::ofstream file("logs/cpu_debug.txt");
     uint32_t i = 0;
-    while (1) {
+
+
+    bool running = true;
+    while (running) {
         // if (i <= 325820) {
             // file << cpu.debug();
         // }
+		if (SDL_PollEvent(&event)) {
+			if (event.type == SDL_QUIT) {
+				running = false;
+			}
+		}
         
-        cpu.execute();
-        if (cpu.getDoubleSpeed()) {
-        }
+        if (gpu.getPPUMode() != V_BLANK) cpu.execute();
+            
+        
+  
 
         // Debugging -> checks if cycles match expected cycles TODO: Remove
         if (cpu.cb) {
@@ -48,7 +68,6 @@ void gb::run(const char *filename) {
                 std::cout << std::hex << std::uppercase << std::setfill('0') << std::setw(2) <<  (int)cpu.op << " | " << std::dec << cpu.cycles << "-" <<  (int)cpu.cyclesPassed << " \n";
             }
         }
-        // std::cout << std::dec << "Cycles Used: " << (int)mmu.cycles << "\n";
         cpu.cycles = 0;
         i++;
     }

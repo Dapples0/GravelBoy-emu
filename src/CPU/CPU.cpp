@@ -2211,6 +2211,34 @@ void CPU::executeCBInstruction(uint8_t opcode) {
     }
 }
 
+void CPU::tick() {
+    timer->tick();
+    cycles += 4;
+}
+
+uint8_t CPU::read8(uint16_t address)
+{
+    int8_t res =  mmu->read8(address);
+    this->tick();
+    return res;
+}
+
+uint16_t CPU::read16(uint16_t address)
+{
+    uint16_t high = (this->read8(address + 1) << 8); // High bit
+    uint16_t low = this->read8(address); // Low bit
+    return high | low;
+}
+
+void CPU::write8(uint16_t address, uint8_t data) {
+    mmu->write8(address, data);
+    this->tick();
+}
+
+void CPU::write16(uint16_t address, uint16_t data) {
+    this->write8(address, data & 0xFF); // Low bit
+    this->write8(address + 1, (data >> 8) & 0xFF); // High bit
+}
 
 
 void CPU::setMode(bool mode)
@@ -2770,33 +2798,4 @@ void CPU::handleInterrupts() {
     this->tick();
     interruptCycles = 20;
 
-}
-
-void CPU::tick() {
-    timer->tick();
-    cycles += 4;
-}
-
-uint8_t CPU::read8(uint16_t address)
-{
-    int8_t res =  mmu->read8(address);
-    this->tick();
-    return res;
-}
-
-uint16_t CPU::read16(uint16_t address)
-{
-    uint16_t high = (this->read8(address + 1) << 8); // High bit
-    uint16_t low = this->read8(address); // Low bit
-    return high | low;
-}
-
-void CPU::write8(uint16_t address, uint8_t data) {
-    mmu->write8(address, data);
-    this->tick();
-}
-
-void CPU::write16(uint16_t address, uint16_t data) {
-    this->write8(address, data & 0xFF); // Low bit
-    this->write8(address + 1, (data >> 8) & 0xFF); // High bit
 }
