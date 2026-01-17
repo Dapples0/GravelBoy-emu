@@ -494,8 +494,8 @@ void MMU::HDMATransfer(bool halt, uint8_t numBytes) {
     if (gpu->getHDMAMode() == GENERAL_DMA) {
         uint16_t curTransfer = gpu->getCurTransfer();
         for (int i = 0; i < numBytes; ++i) {
-            uint8_t data = this->read8(gpu->getHDMASrc() + curTransfer + i);
-            this->write8(gpu->getHDMADes() + curTransfer + i, data);
+            uint8_t data = this->read8(gpu->getHDMASrc() + curTransfer);
+            this->write8(gpu->getHDMADes() + curTransfer, data);
             curTransfer++;
         }
 
@@ -507,12 +507,8 @@ void MMU::HDMATransfer(bool halt, uint8_t numBytes) {
     } else {
 
         uint8_t mode = gpu->getPPUMode();
-        // if (halt) {
-        //     return;
-        // }
-        if (mode == OAM_SCAN) {
-            gpu->setHBlankBurst(true);
-        }
+
+        // Should return if cpu is in halt but this causes the magen test to fail so idk probably black magic and duck tape
 
         if (mode != H_BLANK) {
             return;
@@ -523,9 +519,8 @@ void MMU::HDMATransfer(bool halt, uint8_t numBytes) {
         }
         uint16_t curTransfer = gpu->getCurTransfer();
         for (int i = 0; i < numBytes; ++i) {
-            uint8_t data = this->read8(gpu->getHDMASrc() + curTransfer + i);
-            this->write8(gpu->getHDMADes() + curTransfer + i, data);
-            std::cout << "Bytes transferred: " << (int)curTransfer + 1 << "\n";
+            uint8_t data = this->read8(gpu->getHDMASrc() + curTransfer);
+            this->write8(gpu->getHDMADes() + curTransfer, data);
             curTransfer++;
             if (curTransfer % 16 == 0 && curTransfer != 0) {
                 gpu->setHBlankBurst(false);

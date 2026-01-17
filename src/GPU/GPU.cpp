@@ -315,7 +315,7 @@ void GPU::writeHDMA(uint16_t address, uint8_t data) {
 
                     HDMAmode = (data & 0x80) == 0x80 ? HBLANK_DMA : GENERAL_DMA;
                     
-                    HDMALen = ((data & 0x7F) + 1) * 16;
+                    HDMALen = ((data & 0x7F) + 1) * 16; // Convert to byte format 
 
                     curTransfer = 0;
 
@@ -325,7 +325,7 @@ void GPU::writeHDMA(uint16_t address, uint8_t data) {
                     std::cout << std::hex << std::uppercase << std::setfill('0') << "Source: 0x" << std::setw(4) << (int)HDMADes << std::dec << "\n";
                     std::cout << "Length: " << (int)HDMALen << "\n";
                     hblankBurst = true;
-                    HDMA5 = HDMAmode << 7 | (data & 0x7F);
+                    HDMA5 = (HDMAmode << 7) | (data & 0x7F);
                 } else if ((data & 0x80) != 0x80 && transfer && HDMAmode == HBLANK_DMA) {
                     transfer = false;
                 }
@@ -478,6 +478,7 @@ void GPU::DrawingPixels() {
     if (dotCount == 252) {
         renderScanline();
         PPUmode = H_BLANK;
+        if(transfer && HDMAmode == HBLANK_DMA) hblankBurst = true;
     }
 
 
@@ -815,5 +816,5 @@ void GPU::endHDMATransfer() {
 }
 
 void GPU::reduceHDMA(uint16_t val) {
-    HDMA5 = (HDMALen - val) | HDMAmode << 7;
+    HDMA5 = (((HDMALen - val) / 16) - 1) | (HDMAmode << 7);
 }
