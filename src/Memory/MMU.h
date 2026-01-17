@@ -35,8 +35,7 @@ class MMU {
         uint8_t readPeek(uint16_t address);
 
         void OAMDMATransfer();
-
-        uint8_t getLastOAMByte();
+        void HDMATransfer(bool halt, uint8_t numBytes);
     private:
         std::unique_ptr<Cartridge> rom; // ROM Banks + External RAM
         GPU *gpu; // VRAM + OAM

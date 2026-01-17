@@ -102,7 +102,10 @@ void MMU::setMBC(int type, std::vector<std::array<uint8_t, ROM_BANK_SIZE>> romDa
             this->rom = std::make_unique<MBC1>(romData, romSize, sRamSize);
             break;     
 
-
+        case 0x03: // MBC1 + RAM + Battery
+            std::cout << "MBC Type: MBC1 + RAM\n";
+            this->rom = std::make_unique<MBC1>(romData, romSize, sRamSize);
+            break;  
         default:
             std::cout << "No MBC type found, defaulting to MBC1\n";
             break;
@@ -464,24 +467,78 @@ void MMU::OAMDMATransfer() {
         return;
     }
     uint8_t oamDelay = gpu->checkOAMDelay();
+
     // After DMA is written to, wait 1 m-cycles (delay is initially set to 2 to account for writing to register during the same tick)
     if (oamDelay > 0) {
-        gpu->setOAMDelay(oamDelay--);
+        gpu->setOAMDelay(--oamDelay);
         return;
     }
+    // std::cout << "transfer\n";
     uint8_t bytes = gpu->getOAMDMABytes();
     uint8_t index = OAM_BANK_SIZE - bytes;
     uint16_t src = (gpu->getOAMDMA() << 8) | index;
     uint16_t dest = 0xFE00 | index;
 
     uint8_t data = this->read8(src);
-    lastOAMByte = data;
     gpu->writeOAMTransfer(dest, data);
     bytes--;
     gpu->setOAMDMABytes(bytes);
     if (bytes == 0) gpu->setOAMTransfer(false);
 }
 
-uint8_t MMU::getLastOAMByte() {
-    return lastOAMByte;
+void MMU::HDMATransfer(bool halt, uint8_t numBytes) {
+    if (!cgb || !gpu->checkHDMATransfer()) {
+        return;
+    }
+
+    if (gpu->getHDMAMode() == GENERAL_DMA) {
+        uint16_t curTransfer = gpu->getCurTransfer();
+        for (int i = 0; i < numBytes; ++i) {
+            uint8_t data = this->read8(gpu->getHDMASrc() + curTransfer + i);
+            this->write8(gpu->getHDMADes() + curTransfer + i, data);
+            curTransfer++;
+        }
+
+        gpu->setCurTransfer(curTransfer);
+        if (curTransfer > gpu->getHDMALength()) {
+            gpu->endHDMATransfer();
+        }
+
+    } else {
+
+        uint8_t mode = gpu->getPPUMode();
+        // if (halt) {
+        //     return;
+        // }
+        if (mode == OAM_SCAN) {
+            gpu->setHBlankBurst(true);
+        }
+
+        if (mode != H_BLANK) {
+            return;
+        }
+
+        if (!gpu->checkHBlankBurst()) {
+            return;
+        }
+        uint16_t curTransfer = gpu->getCurTransfer();
+        for (int i = 0; i < numBytes; ++i) {
+            uint8_t data = this->read8(gpu->getHDMASrc() + curTransfer + i);
+            this->write8(gpu->getHDMADes() + curTransfer + i, data);
+            std::cout << "Bytes transferred: " << (int)curTransfer + 1 << "\n";
+            curTransfer++;
+            if (curTransfer % 16 == 0 && curTransfer != 0) {
+                gpu->setHBlankBurst(false);
+            }
+        }
+        gpu->setCurTransfer(curTransfer);
+        gpu->reduceHDMA(curTransfer);
+
+        if (curTransfer >= gpu->getHDMALength()) {
+            gpu->endHDMATransfer();
+        }
+
+    }
 }
+
+

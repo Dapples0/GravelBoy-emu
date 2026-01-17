@@ -54,13 +54,29 @@ class GPU {
 
         uint8_t checkOAMDelay();
 
-        void setOAMDelay(bool val);
+        void setOAMDelay(uint8_t val);
 
         uint8_t getOAMDMABytes();
 
         void setOAMDMABytes(uint8_t val);
 
         uint8_t getOAMDMA();
+
+        bool checkHDMATransfer();
+        int getHDMAMode();
+        uint16_t getCurTransfer();
+        uint16_t getHDMASrc();
+        uint16_t getHDMADes();
+        void setCurTransfer(uint16_t val);
+        uint16_t getHDMALength();
+        void setHBlankBurst(bool val);
+        bool checkHBlankBurst();
+        void endHDMATransfer();
+        void reduceHDMA(uint16_t val);
+
+
+        
+        bool getTransfer();
 
         void tick(uint8_t dots);
     private:
@@ -75,6 +91,14 @@ class GPU {
 
         std::array<uint16_t, SCREEN_HEIGHT * SCREEN_WIDTH> SDL_Display = {};
 
+        // HDMA
+        bool transfer = false;
+        int HDMAmode = 0;
+        uint16_t HDMALen = 0;
+        uint16_t curTransfer = 0;
+        uint16_t HDMADes;
+        uint16_t HDMASrc;
+        bool hblankBurst = false;
         /**
          * 0 - Horizontal Blank
          * 1 - Vertical Blank
@@ -92,7 +116,6 @@ class GPU {
         uint8_t OAMDMADelay;
         uint8_t oamLastByte = 0x00;
 
-        bool vramTransfer = false;
 
         uint16_t windowLineCounter = 0;
         bool drawWindow = false;
@@ -129,9 +152,11 @@ class GPU {
         std::array<uint8_t, PALETTE_SIZE> objPalette = {}; // (OCPD) OBJ Colour Palette data
 
         // VRAM DMA Transfer Registers
-        uint16_t VRAMDMAsrc = 0x0000;
-        uint16_t VRAMDMAdes = 0x0000;
-        uint8_t VRAMDMAlen = 0x00;
+        uint8_t HDMA1 = 0x00;
+        uint8_t HDMA2 = 0x00;
+        uint8_t HDMA3 = 0x00;
+        uint8_t HDMA4 = 0x00;
+        uint8_t HDMA5 = 0x80;
 
 
         // SDL

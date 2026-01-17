@@ -18,11 +18,13 @@ class CPU {
 
         bool getDoubleSpeed();
 
+        // TODO Remove
         uint8_t op;
         bool cb;
         uint32_t cyclesPassed;
         uint32_t cycles = 0;
         uint32_t interruptCycles;
+        bool none;
         std::array<uint8_t, 256> opcodeCycles = {
             4, 12, 8, 8, 4, 4, 8, 4, 20, 8, 8, 8, 4, 4, 8, 4, 
             4, 12, 8, 8, 4, 4, 8, 4, 12, 8, 8, 8, 4, 4, 8, 4, 

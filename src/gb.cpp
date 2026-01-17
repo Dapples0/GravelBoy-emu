@@ -63,12 +63,12 @@ void gb::run(const char *filename) {
 
         // Debugging -> checks if cycles match expected cycles TODO: Remove
         if (cpu.cb) {
-            if ((int)cpu.cyclesPassed + cpu.interruptCycles != cpu.cycles) {
+            if ((int)cpu.cyclesPassed + cpu.interruptCycles != cpu.cycles && !cpu.none) {
                 std::cout << std::hex << std::uppercase << std::setfill('0') << std::setw(2) << "CB" << (int)cpu.op << " | " << std::dec << cpu.cycles << "-" <<  (int)cpu.cyclesPassed << " \n";
                 
             }
         } else {
-            if ((int)cpu.cyclesPassed + cpu.interruptCycles != cpu.cycles) {
+            if ((int)cpu.cyclesPassed + cpu.interruptCycles != cpu.cycles && !cpu.none) {
                 std::cout << std::hex << std::uppercase << std::setfill('0') << std::setw(2) <<  (int)cpu.op << " | " << std::dec << cpu.cycles << "-" <<  (int)cpu.cyclesPassed << " \n";
             }
         }

@@ -1,6 +1,6 @@
 #include "GPU.h"
 #include <bitset>
-
+#include <iomanip>
 
 GPU::GPU() {
 }
@@ -63,10 +63,6 @@ void GPU::tick(uint8_t dots) {
     for (int i = 0; i < dots; ++i) {
         PPUmode = STAT & 0x3;
         dotCount++;
-
-
-
-
 
         if (PPUmode == H_BLANK) {
             HBlank();
@@ -290,7 +286,7 @@ uint8_t GPU::readHDMA(uint16_t address) {
         case HDMA4_ADDRESS: // Write only
             return 0xFF;
         case HDMA5_ADDRESS:
-            return (VRAMDMAlen & 0x7F) | (vramTransfer ? 0 : 1) << 7;;
+            return HDMA5;
         default:
             std::cerr << "Invalid HDMA read address\n";
             return 0xFF;
@@ -300,19 +296,41 @@ uint8_t GPU::readHDMA(uint16_t address) {
 void GPU::writeHDMA(uint16_t address, uint8_t data) {
    switch (address) {
         case HDMA1_ADDRESS:
-            VRAMDMAsrc = (VRAMDMAsrc & 0x00FF) | (data << 8);
+            HDMA1 = data;
             break;
         case HDMA2_ADDRESS:
-            VRAMDMAsrc = (VRAMDMAsrc & 0xFF00) | (data & 0xF0);
+            HDMA2 = data & 0xF0;
             break;
         case HDMA3_ADDRESS:
-            VRAMDMAdes = (VRAMDMAdes & 0x00FF) | ((data & 0x1F) << 8);
+            // Ignore higher 3 bits and handle vram location
+            HDMA3 = (data & 0x1F) | 0x80;
             break;
         case HDMA4_ADDRESS:
-            VRAMDMAdes = (VRAMDMAdes & 0xFF00) | (data & 0xF0);
+            HDMA4 = data & 0xF0;
             break;
         case HDMA5_ADDRESS:
-            // TODO VRAM DMA Transfer
+            {
+                if (!transfer) {
+                    transfer = true;
+
+                    HDMAmode = (data & 0x80) == 0x80 ? HBLANK_DMA : GENERAL_DMA;
+                    
+                    HDMALen = ((data & 0x7F) + 1) * 16;
+
+                    curTransfer = 0;
+
+                    HDMASrc = (HDMA1 << 8) | HDMA2;
+                    HDMADes = (HDMA3 << 8) | HDMA4;
+                    std::cout << std::hex << std::uppercase << std::setfill('0') << "Source: 0x" << std::setw(4) << (int)HDMASrc  << std::dec << "\n";
+                    std::cout << std::hex << std::uppercase << std::setfill('0') << "Source: 0x" << std::setw(4) << (int)HDMADes << std::dec << "\n";
+                    std::cout << "Length: " << (int)HDMALen << "\n";
+                    hblankBurst = true;
+                    HDMA5 = HDMAmode << 7 | (data & 0x7F);
+                } else if ((data & 0x80) != 0x80 && transfer && HDMAmode == HBLANK_DMA) {
+                    transfer = false;
+                }
+
+            }
             break;
         default:
 
@@ -409,7 +427,7 @@ uint8_t GPU::checkOAMDelay()
     return OAMDMADelay;
 }
 
-void GPU::setOAMDelay(bool val) {
+void GPU::setOAMDelay(uint8_t val) {
     OAMDMADelay = val;
 }
 
@@ -622,7 +640,6 @@ void GPU::renderScanline() {
                 } else {
                     colour = getDMGColour(colourId, (objAttr & 0x10) == 0x10 ? OBP1 : OBP0);
                 }
-
                 if (colourId == 0) continue;
 
                 // object priority mode check
@@ -636,7 +653,6 @@ void GPU::renderScanline() {
                 }
 
                 bool showObj = true;
-                // Maybe have a seperate value for object priority mode
                 if (cgb) {
                     if (bgColourId[i + LY * SCREEN_WIDTH] == 0) {
                         showObj = true;
@@ -746,4 +762,58 @@ void GPU::update() {
     SDL_UnlockTexture(texture);
     SDL_RenderCopy(renderer, texture, nullptr, nullptr);
     SDL_RenderPresent(renderer);
+}
+
+bool GPU::checkHDMATransfer() {
+    if (!transfer) {
+        return false;
+    }
+    if (HDMAmode == GENERAL_DMA) {
+        return true;
+    }
+    if (HDMAmode == HBLANK_DMA && hblankBurst && PPUmode == H_BLANK) {
+        return true;
+    }
+    return false;
+}
+
+int GPU::getHDMAMode() {
+    return HDMAmode;
+}
+
+uint16_t GPU::getCurTransfer() {
+    return curTransfer;
+}
+
+uint16_t GPU::getHDMASrc() {
+    return HDMASrc;
+}
+
+uint16_t GPU::getHDMADes() {
+    return HDMADes;
+}
+
+void GPU::setCurTransfer(uint16_t val) {
+    curTransfer = val;
+}
+
+uint16_t GPU::getHDMALength() {
+    return HDMALen;
+}
+
+void GPU::setHBlankBurst(bool val) {
+    hblankBurst = val;
+}
+
+bool GPU::checkHBlankBurst() {
+    return hblankBurst;
+}
+
+void GPU::endHDMATransfer() {
+    transfer = false;
+    HDMA5 = 0xFF;
+}
+
+void GPU::reduceHDMA(uint16_t val) {
+    HDMA5 = (HDMALen - val) | HDMAmode << 7;
 }

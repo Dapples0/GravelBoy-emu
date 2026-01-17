@@ -26,7 +26,13 @@ void CPU::execute() {
         return;
     }
 
-    if (!halt) {
+    if (gpu->checkHDMATransfer()) {
+        none = true;
+    } else {
+        none = false;
+    }
+
+    if (!halt && !gpu->checkHDMATransfer()) {
         uint8_t opcode = this->read8(pc);
         executeInstruction(opcode);
         // std::cout << std::hex << std::uppercase << std::setfill('0') << std::setw(2) <<  (int)opcode << " | ";
@@ -2219,6 +2225,9 @@ void CPU::executeCBInstruction(uint8_t opcode) {
 void CPU::tick() {
     timer->tick();
     mmu->OAMDMATransfer();
+
+    // Transfer one byte in double speed by two bytes in normal speed
+    mmu->HDMATransfer(halt, doubleSpeed ? 1 : 2);
     // gpu + apu tick here
     gpu->tick(doubleSpeed ? 2 : 4);
     
