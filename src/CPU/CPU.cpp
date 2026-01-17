@@ -12,19 +12,32 @@ CPU::CPU() {
 CPU::~CPU() {
 }
 
-void CPU::connect(MMU *mmu) {
+void CPU::connect(MMU *mmu, Timer *timer, GPU *gpu) {
     this->mmu = mmu;
+    this->timer = timer;
+    this->gpu = gpu;
 }
 
 void CPU::execute() {
-    // Reset cycles
-    
-    if (!halt) {
-        uint8_t opcode = mmu->read8(pc);
+    if (stop_delay > 0) {
+        stop_delay--;
+        cyclesPassed = 4;
+        cycles = 4;
+        return;
+    }
+
+    if (gpu->checkHDMATransfer()) {
+        none = true;
+    } else {
+        none = false;
+    }
+
+    if (!halt && !gpu->checkHDMATransfer()) {
+        uint8_t opcode = this->read8(pc);
         executeInstruction(opcode);
         // std::cout << std::hex << std::uppercase << std::setfill('0') << std::setw(2) <<  (int)opcode << " | ";
     } else {
-        this->mmu->tick(4);
+        this->tick();
     }
     handleInterrupts();
 
@@ -43,7 +56,7 @@ void CPU::executeInstruction(uint8_t opcode) {
     cyclesPassed = opcodeCycles[opcode];
     switch (opcode) {
         case 0xCB: // 0xCB Prefixed
-            executeCBInstruction(mmu->read8(pc));
+            executeCBInstruction(this->read8(pc));
             break;
 
         /**
@@ -89,16 +102,16 @@ void CPU::executeInstruction(uint8_t opcode) {
             if (!CGBMode) {
                 return;
             }
+            // Call mmu read and write here as reading and writing to key1 shouldn't take t-cycles
             uint8_t key1 = mmu->read8(0xFF4D);
-            cyclesPassed += 4;
             // If armed switch to other mode
             if ((key1 & 0x01) == 0x01) {
-                
+                //  2050 m-cycle wait after 
+                stop_delay = 2050;
                 doubleSpeed = !doubleSpeed;
 
                 // Clear bit0 and set speed
                 ((key1 & 0x80) == 0x80) ? mmu->write8(0xFF4D, 0x00) : mmu->write8(0xFF4D, 0x80);
-                cyclesPassed += 4;
             }
 
             pc++;            
@@ -160,93 +173,93 @@ void CPU::executeInstruction(uint8_t opcode) {
          * Load Instructions
          */
         case 0x01: // LD BC, u16
-            setBC(mmu->read16(pc));
+            setBC(this->read16(pc));
             pc += 2;
             break;
         case 0x02: // LD (BC), A
-            mmu->write8(getBC(), registers[REG_A]);
+            this->write8(getBC(), registers[REG_A]);
             break;
 
         case 0x06: // LD B, u8
-            registers[REG_B] = mmu->read8(pc);
+            registers[REG_B] = this->read8(pc);
             pc++;
             break;
 
         case 0x0A: // LD A, (BC)
-            registers[REG_A] = mmu->read8(getBC());
+            registers[REG_A] = this->read8(getBC());
             break;
 
         case 0x0E: // LD C, u8
-            registers[REG_C] = mmu->read8(pc);
+            registers[REG_C] = this->read8(pc);
             pc++;
             break;
 
         case 0x11: // LD DE, u16
-            setDE(mmu->read16(pc));
+            setDE(this->read16(pc));
             pc += 2;
             break;
 
         case 0x12: // LD (DE), A
-            mmu->write8(getDE(), registers[REG_A]);
+            this->write8(getDE(), registers[REG_A]);
             break;
 
         case 0x16: // LD D, u8
-            registers[REG_D] = mmu->read8(pc);
+            registers[REG_D] = this->read8(pc);
             pc++;
             break;
 
         case 0x1A: // LD A, (DE)
-            registers[REG_A] = mmu->read8(getDE());
+            registers[REG_A] = this->read8(getDE());
             break;
 
         case 0x1E: // LD E, u8
-            registers[REG_E] = mmu->read8(pc);
+            registers[REG_E] = this->read8(pc);
             pc++;
             break;
 
         case 0x21: // LD HL, u16
-            setHL(mmu->read16(pc));
+            setHL(this->read16(pc));
             pc += 2;
             break;
 
         case 0x22: // LD (HL+), A
-            mmu->write8(getHL(), registers[REG_A]);
+            this->write8(getHL(), registers[REG_A]);
             setHL(getHL() + 1);
             break;
 
         case 0x26: // LD H, u8
-            registers[REG_H] = mmu->read8(pc);
+            registers[REG_H] = this->read8(pc);
             pc++;
             break;
 
         case 0x2A: // LD A, (HL+)
-            registers[REG_A] = mmu->read8(getHL());
+            registers[REG_A] = this->read8(getHL());
             setHL(getHL() + 1);
             break;
 
         case 0x2E: // LD L, u8
-            registers[REG_L] = mmu->read8(pc);
+            registers[REG_L] = this->read8(pc);
             pc++;
             break;
 
 
         case 0x32: // LD (HL-), A
-            mmu->write8(getHL(), registers[REG_A]);
+            this->write8(getHL(), registers[REG_A]);
             setHL(getHL() - 1);
             break;
 
         case 0x36: // LD (HL), u8
-            mmu->write8(getHL(), mmu->read8(pc));
+            this->write8(getHL(), this->read8(pc));
             pc++;
             break;
 
         case 0x3A: // LD A, (HL-)
-            registers[REG_A] = mmu->read8(getHL());
+            registers[REG_A] = this->read8(getHL());
             setHL(getHL() - 1);
             break;
 
         case 0x3E: // LD A, u8
-            registers[REG_A] = mmu->read8(pc);
+            registers[REG_A] = this->read8(pc);
             pc++;
             break;
     
@@ -275,7 +288,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0x46: // LD B, (HL)
-            registers[REG_B] = mmu->read8(getHL());
+            registers[REG_B] = this->read8(getHL());
             break;
 
         case 0x47: // LD B, A
@@ -307,7 +320,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0x4E: // LD C, (HL)
-            registers[REG_C] = mmu->read8(getHL());
+            registers[REG_C] = this->read8(getHL());
             break;
 
         case 0x4F: // LD C, A
@@ -340,7 +353,7 @@ void CPU::executeInstruction(uint8_t opcode) {
 
 
         case 0x56: // LD D, (HL)
-            registers[REG_D] = mmu->read8(getHL());
+            registers[REG_D] = this->read8(getHL());
             break;
 
         case 0x57: // LD D, A
@@ -372,7 +385,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0x5E: // LD E, (HL)
-            registers[REG_E] = mmu->read8(getHL());
+            registers[REG_E] = this->read8(getHL());
             break;
 
         case 0x5F: // LD E, A
@@ -404,7 +417,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0x66: // LD H, (HL)
-            registers[REG_H] = mmu->read8(getHL());
+            registers[REG_H] = this->read8(getHL());
             break;
 
         case 0x67: // LD H, A
@@ -438,7 +451,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0x6E: // LD L, (HL)
-            registers[REG_L] = mmu->read8(getHL());
+            registers[REG_L] = this->read8(getHL());
             break;
 
         case 0x6F: // LD L, A
@@ -446,29 +459,29 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0x70: // LD (HL), B
-            mmu->write8(getHL(), registers[REG_B]);
+            this->write8(getHL(), registers[REG_B]);
             break;
 
         case 0x71: // LD (HL), C
-            mmu->write8(getHL(), registers[REG_C]);
+            this->write8(getHL(), registers[REG_C]);
             break;
 
         case 0x72: // LD (HL), D
-            mmu->write8(getHL(), registers[REG_D]);
+            this->write8(getHL(), registers[REG_D]);
             break;
         case 0x73: // LD (HL), E
-            mmu->write8(getHL(), registers[REG_E]);
+            this->write8(getHL(), registers[REG_E]);
             break;
         case 0x74: // LD (HL), H
-            mmu->write8(getHL(), registers[REG_H]);
+            this->write8(getHL(), registers[REG_H]);
             break;
 
         case 0x75: // LD (HL), L
-            mmu->write8(getHL(), registers[REG_L]);
+            this->write8(getHL(), registers[REG_L]);
             break;
 
         case 0x77: // LD (HL), A
-            mmu->write8(getHL(), registers[REG_A]);
+            this->write8(getHL(), registers[REG_A]);
             break;
 
         case 0x78: // LD A, B
@@ -496,7 +509,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0x7E: // LD A, (HL)
-            registers[REG_A] = mmu->read8(getHL());
+            registers[REG_A] = this->read8(getHL());
             break;
 
         case 0x7F: // LD A, A
@@ -504,30 +517,30 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0xE0: // LD (FF00+u8), A
-            mmu->write8(0xFF00 + mmu->read8(pc), registers[REG_A]);
+            this->write8(0xFF00 + this->read8(pc), registers[REG_A]);
             pc++;
             break;
 
         case 0xE2: // LD (FF00+C), A
-            mmu->write8(0xFF00 + registers[REG_C], registers[REG_A]);
+            this->write8(0xFF00 + registers[REG_C], registers[REG_A]);
             break;
 
         case 0xEA: // LD (u16), A
-            mmu->write8(mmu->read16(pc), registers[REG_A]);
+            this->write8(this->read16(pc), registers[REG_A]);
             pc += 2;
             break;
 
         case 0xF0: // LD A, (FF00+u8)
-            registers[REG_A] = mmu->read8(0xFF00 + mmu->read8(pc));
+            registers[REG_A] = this->read8(0xFF00 + this->read8(pc));
             pc++;
             break;
 
         case 0xF2: // LD A, (FF00+C),
-            registers[REG_A] = mmu->read8(0xFF00 + registers[REG_C]);
+            registers[REG_A] = this->read8(0xFF00 + registers[REG_C]);
             break;
 
         case 0xFA: // LD A, (u16)
-            registers[REG_A] = mmu->read8(mmu->read16(pc));
+            registers[REG_A] = this->read8(this->read16(pc));
             pc += 2;
             break; 
 
@@ -583,11 +596,11 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0x34: // INC (HL)
-            mmu->write8(getHL(), INC8(mmu->read8(getHL())));
+            this->write8(getHL(), INC8(this->read8(getHL())));
             break;
 
         case 0x35: // DEC (HL)
-            mmu->write8(getHL(), DEC8(mmu->read8(getHL())));
+            this->write8(getHL(), DEC8(this->read8(getHL())));
             break;
     
         case 0x3C: // INC A
@@ -623,7 +636,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0x86: // ADD A, (HL)
-            ADD8(mmu->read8(getHL()));
+            ADD8(this->read8(getHL()));
             break;
 
         case 0x87: // ADD A, A
@@ -655,7 +668,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0x8E: // ADC A, (HL)
-            ADC(mmu->read8(getHL()));
+            ADC(this->read8(getHL()));
             break;
 
         case 0x8F: // ADC A, A
@@ -687,7 +700,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0x96: // SUB A, (HL)
-            SUB(mmu->read8(getHL()));
+            SUB(this->read8(getHL()));
             break;
 
         case 0x97: // SUB A, A
@@ -719,7 +732,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0x9E: // SBC A, (HL)
-            SBC(mmu->read8(getHL()));
+            SBC(this->read8(getHL()));
             break;
 
         case 0x9F: // SBC A, A
@@ -727,23 +740,23 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0xC6: // ADD A, u8
-            ADD8(mmu->read8(pc));
+            ADD8(this->read8(pc));
             pc++;
             break;
 
         case 0xCE: // ADC A, u8
-            ADC(mmu->read8(pc));
+            ADC(this->read8(pc));
             pc++;
             break;
 
 
         case 0xD6: // SUB A, u8
-            SUB(mmu->read8(pc));
+            SUB(this->read8(pc));
             pc++;
             break;
 
         case 0xDE: // SBC A, u8
-            SBC(mmu->read8(pc));
+            SBC(this->read8(pc));
             pc++;
             break;
 
@@ -822,7 +835,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0xA6: // AND A, (HL)
-            AND(mmu->read8(getHL()));
+            AND(this->read8(getHL()));
             break;
 
         case 0xA7: // AND A, A
@@ -854,7 +867,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0xAE: // AND A, (HL)
-            XOR(mmu->read8(getHL()));
+            XOR(this->read8(getHL()));
             break;
 
         case 0xAF: // AND A, A
@@ -886,7 +899,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0xB6: // OR A, (HL)
-            OR(mmu->read8(getHL()));
+            OR(this->read8(getHL()));
             break;
 
         case 0xB7: // OR A, A
@@ -918,7 +931,7 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0xBE: // CP A, (HL)
-            CP(mmu->read8(getHL()));
+            CP(this->read8(getHL()));
             break;
 
         case 0xBF: // CP A, A
@@ -926,22 +939,22 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
 
         case 0xE6: // AND A, u8
-            AND(mmu->read8(pc));
+            AND(this->read8(pc));
             pc++;
             break;
 
         case 0xEE: // XOR A, u8
-            XOR(mmu->read8(pc));
+            XOR(this->read8(pc));
             pc++;
             break;
 
         case 0xF6: // OR A, u8
-            OR(mmu->read8(pc));
+            OR(this->read8(pc));
             pc++;
             break;
 
         case 0xFE: // CP A, u8
-            CP(mmu->read8(pc));
+            CP(this->read8(pc));
             pc++;
             break;
 
@@ -1100,18 +1113,18 @@ void CPU::executeInstruction(uint8_t opcode) {
          * Stack Manipulation Instructions
          */
         case 0x08: // LD (u16), SP
-            mmu->write16(mmu->read16(pc), sp);
+            this->write16(this->read16(pc), sp);
             pc += 2;
             break;
 
         case 0x31: // LD SP, u16
-            sp = mmu->read16(pc);
+            sp = this->read16(pc);
             pc += 2;
             break;        
 
         case 0x33: // INC SP
             sp++;
-            mmu->tick(4);
+            this->tick();
             break;
         
         case 0x39: // ADD HL, SP
@@ -1121,47 +1134,47 @@ void CPU::executeInstruction(uint8_t opcode) {
 
         case 0x3B: // DEC SP
             sp--;
-            mmu->tick(4);
+            this->tick();
             break;
 
         case 0xC1: // POP BC
-            setBC(mmu->read16(sp));
+            setBC(this->read16(sp));
             sp += 2;
             break;
 
         case 0xC5: // PUSH BC
             sp -= 2;
-            mmu->tick(4);
-            mmu->write16(sp, getBC());
+            this->tick();
+            this->write16(sp, getBC());
             break;
 
 
         case 0xD1: // POP DE
-            setDE(mmu->read16(sp));
+            setDE(this->read16(sp));
             sp += 2;      
             break;
 
         case 0xD5: // PUSH DE
             sp -= 2;
-            mmu->tick(4);
-            mmu->write16(sp, getDE());
+            this->tick();
+            this->write16(sp, getDE());
             break;
 
         case 0xE1: // POP HL
-            setHL(mmu->read16(sp));
+            setHL(this->read16(sp));
             sp += 2;
             break;
 
         case 0xE5: // PUSH HL
             sp -= 2;
-            mmu->tick(4);
-            mmu->write16(sp, getHL());
+            this->tick();
+            this->write16(sp, getHL());
             break;
         
 
         case 0xE8: // ADD SP, i8
         {
-            uint8_t val = mmu->read8(pc);
+            uint8_t val = this->read8(pc);
             
             setZ(false);
             setN(false);
@@ -1169,27 +1182,27 @@ void CPU::executeInstruction(uint8_t opcode) {
             setC(((sp & 0xFF) + val) > 0xFF);
 
             //TODO might not be in correct place
-            mmu->tick(4);
+            this->tick();
             sp += (int8_t)val;
 
-            mmu->tick(4);
+            this->tick();
             pc++;
         }
             break;
         case 0xF1: // POP AF
-            setAF(mmu->read16(sp));
+            setAF(this->read16(sp));
             sp += 2;
             break;
 
         case 0xF5: // PUSH AF
             sp -= 2;
-            mmu->tick(4);
-            mmu->write16(sp, getAF());
+            this->tick();
+            this->write16(sp, getAF());
             break;
 
         case 0xF8: // LD HL, SP + i8
         {
-            uint8_t val = mmu->read8(pc);
+            uint8_t val = this->read8(pc);
 
             setZ(false);
             setN(false);
@@ -1198,13 +1211,13 @@ void CPU::executeInstruction(uint8_t opcode) {
 
             setHL(sp + (int8_t)val);
             pc++;
-            mmu->tick(4);
+            this->tick();
         }
             break;
 
         case 0xF9: // LD SP, HL
             sp = getHL();
-            mmu->tick(4);
+            this->tick();
             break;
 
         
@@ -1260,7 +1273,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             registers[REG_L] = RLC(registers[REG_L]);
             break;
         case 0x06: // RLC (HL)
-            mmu->write8(getHL(), RLC(mmu->read8(getHL())));
+            this->write8(getHL(), RLC(this->read8(getHL())));
             break;
         case 0x07: // RLC A
             registers[REG_A] = RLC(registers[REG_A]);
@@ -1284,7 +1297,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             registers[REG_L] = RRC(registers[REG_L]);
             break;
         case 0x0E: // RRC (HL)
-            mmu->write8(getHL(), RRC(mmu->read8(getHL())));
+            this->write8(getHL(), RRC(this->read8(getHL())));
             break;
         case 0x0F: // RRC A
             registers[REG_A] = RRC(registers[REG_A]);
@@ -1308,7 +1321,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             registers[REG_L] = RL(registers[REG_L]);
             break;
         case 0x16: // RL (HL)
-            mmu->write8(getHL(), RL(mmu->read8(getHL())));
+            this->write8(getHL(), RL(this->read8(getHL())));
             break;
         case 0x17: // RL A
             registers[REG_A] = RL(registers[REG_A]);
@@ -1332,7 +1345,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             registers[REG_L] = RR(registers[REG_L]);
             break;
         case 0x1E: // RR (HL)
-            mmu->write8(getHL(), RR(mmu->read8(getHL())));
+            this->write8(getHL(), RR(this->read8(getHL())));
             break;
         case 0x1F: // RR A
             registers[REG_A] = RR(registers[REG_A]);
@@ -1356,7 +1369,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             registers[REG_L] = SLA(registers[REG_L]);
             break;
         case 0x26: // SLA (HL)
-            mmu->write8(getHL(), SLA(mmu->read8(getHL())));
+            this->write8(getHL(), SLA(this->read8(getHL())));
             break;
         case 0x27: // SLA A
             registers[REG_A] = SLA(registers[REG_A]);
@@ -1380,7 +1393,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             registers[REG_L] = SRA(registers[REG_L]);
             break;
         case 0x2E: // SRA (HL)
-            mmu->write8(getHL(), SRA(mmu->read8(getHL())));
+            this->write8(getHL(), SRA(this->read8(getHL())));
             break;
         case 0x2F: // SRA A
             registers[REG_A] = SRA(registers[REG_A]);
@@ -1404,7 +1417,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             registers[REG_L] = SWAP(registers[REG_L]);
             break;
         case 0x36: // SWAP (HL)
-            mmu->write8(getHL(), SWAP(mmu->read8(getHL())));
+            this->write8(getHL(), SWAP(this->read8(getHL())));
             break;
         case 0x37: // SWAP A
             registers[REG_A] = SWAP(registers[REG_A]);
@@ -1428,7 +1441,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             registers[REG_L] = SRL(registers[REG_L]);
             break;
         case 0x3E: // SRL (HL)
-            mmu->write8(getHL(), SRL(mmu->read8(getHL())));
+            this->write8(getHL(), SRL(this->read8(getHL())));
             break;
         case 0x3F: // SRL A
             registers[REG_A] = SRL(registers[REG_A]);
@@ -1459,7 +1472,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
         
         case 0x46: // BIT 0, (HL)
-            BIT(0, mmu->read8(getHL()));
+            BIT(0, this->read8(getHL()));
             break;
         
         case 0x47: // BIT 0, A
@@ -1491,7 +1504,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
         
         case 0x4E: // BIT 1, (HL)
-            BIT(1, mmu->read8(getHL()));
+            BIT(1, this->read8(getHL()));
             break;
         
         case 0x4F: // BIT 1, A
@@ -1523,7 +1536,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
         
         case 0x56: // BIT 2, (HL)
-            BIT(2, mmu->read8(getHL()));
+            BIT(2, this->read8(getHL()));
             break;
         
         case 0x57: // BIT 2, A
@@ -1555,7 +1568,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
         
         case 0x5E: // BIT 3, (HL)
-            BIT(3, mmu->read8(getHL()));
+            BIT(3, this->read8(getHL()));
             break;
         
         case 0x5F: // BIT 3, A
@@ -1587,7 +1600,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
         
         case 0x66: // BIT 4, (HL)
-            BIT(4, mmu->read8(getHL()));
+            BIT(4, this->read8(getHL()));
             break;
         
         case 0x67: // BIT 4, A
@@ -1619,7 +1632,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
         
         case 0x6E: // BIT 5, (HL)
-            BIT(5, mmu->read8(getHL()));
+            BIT(5, this->read8(getHL()));
             break;
         
         case 0x6F: // BIT 5, A
@@ -1651,7 +1664,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
         
         case 0x76: // BIT 6, (HL)
-            BIT(6, mmu->read8(getHL()));
+            BIT(6, this->read8(getHL()));
             break;
     
         case 0x77: // BIT 6, A
@@ -1683,7 +1696,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
         
         case 0x7E: // BIT 7, (HL)
-            BIT(7, mmu->read8(getHL()));
+            BIT(7, this->read8(getHL()));
             break;
         
         case 0x7F: // BIT 7, A
@@ -1715,7 +1728,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0x86: // RES 0, (HL)
-            mmu->write8(getHL(), RES(0, mmu->read8(getHL())));
+            this->write8(getHL(), RES(0, this->read8(getHL())));
             break;
 
         case 0x87: // RES 0, A
@@ -1747,7 +1760,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0x8E: // RES 1, (HL)
-            mmu->write8(getHL(), RES(1, mmu->read8(getHL())));
+            this->write8(getHL(), RES(1, this->read8(getHL())));
             break;
 
         case 0x8F: // RES 1, A
@@ -1779,7 +1792,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0x96: // RES 2, (HL)
-            mmu->write8(getHL(), RES(2, mmu->read8(getHL())));
+            this->write8(getHL(), RES(2, this->read8(getHL())));
             break;
 
         case 0x97: // RES 2, A
@@ -1811,7 +1824,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0x9E: // RES 3, (HL)
-            mmu->write8(getHL(), RES(3, mmu->read8(getHL())));
+            this->write8(getHL(), RES(3, this->read8(getHL())));
             break;
 
         case 0x9F: // RES 3, A
@@ -1843,7 +1856,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0xA6: // RES 4, (HL)
-            mmu->write8(getHL(), RES(4, mmu->read8(getHL())));
+            this->write8(getHL(), RES(4, this->read8(getHL())));
             break;
 
         case 0xA7: // RES 4, A
@@ -1875,7 +1888,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0xAE: // RES 5, (HL)
-            mmu->write8(getHL(), RES(5, mmu->read8(getHL())));
+            this->write8(getHL(), RES(5, this->read8(getHL())));
             break;
 
         case 0xAF: // RES 5, A
@@ -1907,7 +1920,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0xB6: // RES 6, (HL)
-            mmu->write8(getHL(), RES(6, mmu->read8(getHL())));
+            this->write8(getHL(), RES(6, this->read8(getHL())));
             break;
 
         case 0xB7: // RES 6, A
@@ -1939,7 +1952,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0xBE: // RES 7, (HL)
-            mmu->write8(getHL(), RES(7, mmu->read8(getHL())));
+            this->write8(getHL(), RES(7, this->read8(getHL())));
             break;
 
         case 0xBF: // RES 7, A
@@ -1971,7 +1984,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0xC6: // SET 0, (HL)
-            mmu->write8(getHL(), SET(0, mmu->read8(getHL())));
+            this->write8(getHL(), SET(0, this->read8(getHL())));
             break;
 
         case 0xC7: // SET 0, A
@@ -2003,7 +2016,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0xCE: // SET 1, (HL)
-            mmu->write8(getHL(), SET(1, mmu->read8(getHL())));
+            this->write8(getHL(), SET(1, this->read8(getHL())));
             break;
 
         case 0xCF: // SET 1, A
@@ -2035,7 +2048,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0xD6: // SET 2, (HL)
-            mmu->write8(getHL(), SET(2, mmu->read8(getHL())));
+            this->write8(getHL(), SET(2, this->read8(getHL())));
             break;
 
         case 0xD7: // SET 2, A
@@ -2067,7 +2080,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0xDE: // SET 3, (HL)
-            mmu->write8(getHL(), SET(3, mmu->read8(getHL())));
+            this->write8(getHL(), SET(3, this->read8(getHL())));
             break;
 
         case 0xDF: // SET 3, A
@@ -2099,7 +2112,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0xE6: // SET 4, (HL)
-            mmu->write8(getHL(), SET(4, mmu->read8(getHL())));
+            this->write8(getHL(), SET(4, this->read8(getHL())));
             break;
 
         case 0xE7: // SET 4, A
@@ -2131,7 +2144,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0xEE: // SET 5, (HL)
-            mmu->write8(getHL(), SET(5, mmu->read8(getHL())));
+            this->write8(getHL(), SET(5, this->read8(getHL())));
             break;
 
         case 0xEF: // SET 5, A
@@ -2163,7 +2176,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0xF6: // SET 6, (HL)
-            mmu->write8(getHL(), SET(6, mmu->read8(getHL())));
+            this->write8(getHL(), SET(6, this->read8(getHL())));
             break;
 
         case 0xF7: // SET 6, A
@@ -2195,7 +2208,7 @@ void CPU::executeCBInstruction(uint8_t opcode) {
             break;
 
         case 0xFE: // SET 7, (HL)
-            mmu->write8(getHL(), SET(7, mmu->read8(getHL())));
+            this->write8(getHL(), SET(7, this->read8(getHL())));
             break;
 
         case 0xFF: // SET 7, A
@@ -2209,9 +2222,51 @@ void CPU::executeCBInstruction(uint8_t opcode) {
     }
 }
 
+void CPU::tick() {
+    timer->tick();
+    mmu->OAMDMATransfer();
+
+    // Transfer one byte in double speed by two bytes in normal speed
+    mmu->HDMATransfer(halt, doubleSpeed ? 1 : 2);
+    // gpu + apu tick here
+    gpu->tick(doubleSpeed ? 2 : 4);
+    
+    cycles += 4;
+}
+
+uint8_t CPU::read8(uint16_t address) {
+    if ((gpu->checkOAMTransfer() && gpu->checkOAMDelay() == 0) && address <= 0xFE9F) {
+        this->tick();
+        return 0xFF;
+    }
+    int8_t res = mmu->read8(address);
+    this->tick();
+    return res;
+}
+
+uint16_t CPU::read16(uint16_t address)
+{
+    uint16_t high = (this->read8(address + 1) << 8); // High bit
+    uint16_t low = this->read8(address); // Low bit
+    return high | low;
+}
+
+void CPU::write8(uint16_t address, uint8_t data) {
+    if ((gpu->checkOAMTransfer() && gpu->checkOAMDelay() == 0) && address <= 0xFE9F) {
+        this->tick();
+        return;
+    }
+    mmu->write8(address, data);
+    this->tick();
+}
+
+void CPU::write16(uint16_t address, uint16_t data) {
+    this->write8(address, data & 0xFF); // Low bit
+    this->write8(address + 1, (data >> 8) & 0xFF); // High bit
+}
 
 
-void CPU::setState(int mode)
+void CPU::setMode(bool mode)
 {
     // resetGB();
     // CGBMode = false;
@@ -2350,33 +2405,33 @@ void CPU::setAF(uint16_t val) {
 
 
 void CPU::RET(bool condition) {
-    mmu->tick(4);
+    this->tick();
     if (condition) {
-        uint8_t low = mmu->read8(sp++);
-        uint8_t high = mmu->read8(sp++);    
+        uint8_t low = this->read8(sp++);
+        uint8_t high = this->read8(sp++);    
         pc = (high << 8) | low;
-        mmu->tick(4);
+        this->tick();
         // With condition cycles passed is 20
         cyclesPassed = 20;
-        // pc = mmu->read8(sp++);
+        // pc = this->read8(sp++);
         // sp += 2;
     }
 }
 
 void CPU::RETUNC() {
-    uint8_t low = mmu->read8(sp++);
-    uint8_t high = mmu->read8(sp++);    
+    uint8_t low = this->read8(sp++);
+    uint8_t high = this->read8(sp++);    
     pc = (high << 8) | low;
-    mmu->tick(4);
+    this->tick();
 }
 
 void CPU::CALL(bool condition) {
-    uint16_t address = mmu->read16(pc);
+    uint16_t address = this->read16(pc);
     pc += 2;
     if (condition) {
-        mmu->tick(4);
+        this->tick();
         sp -= 2;
-        mmu->write16(sp, pc);
+        this->write16(sp, pc);
 
         // Implicit jump
         pc = address;
@@ -2389,15 +2444,15 @@ void CPU::CALL(bool condition) {
 
 void CPU::RST(uint8_t vec) {
     sp -= 2;
-    mmu->tick(4);
-    mmu->write16(sp, pc);
+    this->tick();
+    this->write16(sp, pc);
     pc = vec;
 }
 
 void CPU::JP(bool condition) {
-    uint16_t addr = mmu->read16(pc);
+    uint16_t addr = this->read16(pc);
     if (condition) {
-        mmu->tick(4);
+        this->tick();
         pc = addr;
         // With condition cycles passed is 16
         cyclesPassed = 16;
@@ -2407,10 +2462,10 @@ void CPU::JP(bool condition) {
 }
 
 void CPU::JR(bool condition) {
-    int8_t addr = (int8_t)mmu->read8(pc);
+    int8_t addr = (int8_t)this->read8(pc);
     if (condition) {
         pc += addr;
-        mmu->tick(4);
+        this->tick();
         // With condition cycles passed is 12
         cyclesPassed = 12;
     }    
@@ -2430,7 +2485,7 @@ uint8_t CPU::INC8(uint8_t val) {
 }
 
 uint16_t CPU::INC16(uint16_t val) {
-    mmu->tick(4);
+    this->tick();
     return val + 1;
 }
 
@@ -2445,7 +2500,7 @@ uint8_t CPU::DEC8(uint8_t val) {
 }
 
 uint16_t CPU::DEC16(uint16_t val) {
-    mmu->tick(4);
+    this->tick();
     return val - 1;
 }
 
@@ -2466,7 +2521,7 @@ void CPU::ADD16(uint16_t val) {
     setH(((getHL() & 0x0FFF) + (val & 0x0FFF)) > 0x0FFF);
     // Set H and L registers
     setHL(res);
-    mmu->tick(4);
+    this->tick();
 }
 
 void CPU::ADC(uint8_t val) {
@@ -2735,14 +2790,13 @@ void CPU::handleInterrupts() {
 
 
     // Service two wait states
-    mmu->tick(4);
-    mmu->tick(4);
+    this->tick();
+    this->tick();
 
     // Push PC onto stack
     sp -= 2;
-    mmu->write16(sp, pc);
+    this->write16(sp, pc);
     uint16_t address = 0x0000;
-
     if (pending & VBLANK_BIT) {
         mmu->setIF(iFlag & ~VBLANK_BIT); 
         address = VBLANK_INT;
@@ -2765,7 +2819,7 @@ void CPU::handleInterrupts() {
     }
     // Set address to handler
     pc = address;
-    mmu->tick(4);
+    this->tick();
     interruptCycles = 20;
 
 }

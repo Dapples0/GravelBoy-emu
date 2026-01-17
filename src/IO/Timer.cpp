@@ -74,9 +74,9 @@ uint8_t Timer::read(uint16_t address) {
     return 0x00;
 }
 
-void Timer::tick(uint32_t cyclesPassed) {
+void Timer::tick() {
     // Loop through each individual cycle passed per cpu operation
-    for (uint32_t i = 0; i < cyclesPassed; ++i) {
+    for (uint32_t i = 0; i < 4; ++i) {
         bool preTimerCheck = timerControlCheck();
         
 
