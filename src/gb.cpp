@@ -1,9 +1,10 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <SDL2/SDL.h>
 
 #include "gb.h"
-#include <SDL2/SDL.h>
+
 
 gb::gb() : cpu(), apu(), gpu(), joypad(), mmu(), timer(), interrupt() {
     // cpu = CPU();
@@ -17,6 +18,7 @@ gb::gb() : cpu(), apu(), gpu(), joypad(), mmu(), timer(), interrupt() {
     mmu.connect(&gpu, &joypad, &timer, &apu, &interrupt);
     timer.connect(&interrupt);
     gpu.connect(&interrupt);
+    joypad.connect(&interrupt);
     
 }
 

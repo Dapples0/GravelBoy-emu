@@ -1,6 +1,8 @@
-#include <cstdint>
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
+
+#include <cstdint>
+#include <SDL2/SDL.h>
 
 #define SCREEN_WIDTH 160
 #define SCREEN_HEIGHT 144
@@ -74,5 +76,17 @@
 #define BCPD_ADDRESS 0xFF69
 #define OCPS_ADDRESS 0xFF6A
 #define OCPD_ADDRESS 0xFF6B
+
+#define JOYPAD_SELECT_BUTTONS 0x20
+#define JOYPAD_SELECT_DIRECTION_PAD 0x10
+#define JOYPAD_BUTTON_START 0x08
+#define JOYPAD_BUTTON_SELECT 0x04
+#define JOYPAD_BUTTON_B 0x02
+#define JOYPAD_BUTTON_A 0x01
+#define JOYPAD_DIRECTION_DOWN 0x08
+#define JOYPAD_DIRECTION_UP 0x04
+#define JOYPAD_DIRECTION_LEFT 0x02
+#define JOYPAD_DIRECTION_RIGHT 0x01
+
 
 #endif
