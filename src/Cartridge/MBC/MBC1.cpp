@@ -1,10 +1,9 @@
 #include "MBC1.h"
 #include <iostream>
-MBC1::MBC1(std::vector<std::array<uint8_t, ROM_BANK_SIZE>> romData, int romSize, int extRamSize) {
+MBC1::MBC1(std::vector<std::array<uint8_t, ROM_BANK_SIZE>> romData, int romSize, int extRamCode) {
     this->romBank = romData;
     this->romSize = romSize;
-    this->ramSize = extRamSize;
-    this->ramBank = getRamBank(extRamSize);
+    this->ramBank = getRamBank(extRamCode);
     this->bankingMode = false;
     this->ramWrite = false;
     this->romBankNumber = 1;
@@ -59,7 +58,7 @@ void MBC1::write(uint16_t address, uint8_t data) {
             ramWrite = true;
         } else {
             ramWrite = false;
-            // battery save here TODO
+            if (battery) save();
         }        
     } 
     // ROM Bank Number (Write Only) - Selects which ROM Bank to use

@@ -3,6 +3,10 @@
 
 #include <vector>
 #include <array>
+#include <string>
+#include <fstream>
+#include <filesystem>
+#include <ios>
 
 #include "../constants.h"
 
@@ -13,7 +17,7 @@ class Cartridge {
 
         virtual uint8_t read(uint16_t address);
         virtual void write(uint16_t address, uint8_t data);        
-
+        void setBattery(std::string title, bool cgb);
     protected:
         // ROM Banks
         std::vector<std::array<uint8_t, ROM_BANK_SIZE>> romBank;
@@ -25,6 +29,13 @@ class Cartridge {
 
         int romSize;
         int ramSize;
+
+        bool battery = false;
+
+        std::string path = "";
+
+        bool loadSave();
+        void save();
 };
 
 

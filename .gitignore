@@ -1,3 +1,4 @@
-rom/
+rom/*
 main
 logs/
+saves/*

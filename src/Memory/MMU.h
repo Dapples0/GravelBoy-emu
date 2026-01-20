@@ -5,6 +5,10 @@
 #include <array>
 #include <memory>
 #include <vector>
+#include <string>
+#include <fstream>
+#include <iostream>
+#include <ios>
 
 #include "../constants.h"
 #include "../APU/APU.h"
@@ -59,7 +63,7 @@ class MMU {
         uint8_t key1 = 0;
 
 
-        void setMBC(int type, std::vector<std::array<uint8_t, ROM_BANK_SIZE>> romData, int romSize, int extRamSize);
+        void setMBC(int type, std::vector<std::array<uint8_t, ROM_BANK_SIZE>> romData, int romSize, int extRamSize, std::string title);
         uint8_t readWRAM(uint16_t address);
         void writeWRAM(uint16_t address, uint8_t data);
 
