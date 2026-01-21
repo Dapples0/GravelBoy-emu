@@ -79,6 +79,9 @@ class GPU {
         bool getTransfer();
 
         void tick(uint8_t dots);
+
+        bool isFrameReady();
+        void setFrameReady(bool val);
     private:
         Interrupts *interrupt;
 
@@ -180,6 +183,9 @@ class GPU {
 
         void clear();
         void update();
+
+        bool frameReady = true;
+
 
 };
 

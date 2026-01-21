@@ -31,7 +31,7 @@ void GPU::attatchSDL() {
         exit(1);
     }
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     if (renderer == nullptr) {
         std::cerr << "Could not create SDL renderer\n";
@@ -502,13 +502,17 @@ void GPU::HBlank() {
 
 void GPU::VBlank() {
     if (dotCount == 456) {
-        LY++;
-        dotCount = 0;
-        if (LY == 154) {
+        if (LY == 144) {
             update();
+            frameReady = true;
+        }
+        LY++;
+        dotCount = 0;        
+        if (LY == 154) {
             PPUmode = OAM_SCAN;
             LY = 0;
         }
+
 
     }
 
@@ -608,7 +612,7 @@ void GPU::renderScanline() {
                 uint8_t objAttr = oamBuffer[j][3];
 
                 // Skip if current pixel does not contain the object
-                if (posX > (i + 8) || (posX + 8) <= i + 8) continue;
+                if (posX > (i + 8) || posX <= i) continue;
 
                 tileAddress = 0x8000;
 
@@ -817,4 +821,12 @@ void GPU::endHDMATransfer() {
 
 void GPU::reduceHDMA(uint16_t val) {
     HDMA5 = (((HDMALen - val) / 16) - 1) | (HDMAmode << 7);
+}
+
+bool GPU::isFrameReady() {
+    return frameReady;
+}
+
+void GPU::setFrameReady(bool val) {
+    frameReady = val;
 }

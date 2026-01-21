@@ -45,37 +45,41 @@ void gb::run(const char *filename) {
 
     uint32_t cycles_until_poll = 0;
     bool running = true;
-    while (running) {
-        // if (i <= 325820) {
-            // file << cpu.debug();
-        // }
 
-        // TODO remove later -> here to make tests run faster
-        if (++cycles_until_poll > 10000) {
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) running = false;
+    uint32_t lastFrameTime = SDL_GetTicks();
+    uint32_t ticksPerFrame = 1000 / FRAMERATE;
+
+    while (running) {        
+        if (!gpu.isFrameReady()) {
+            cpu.execute();
+        } else {
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT) running = false;
+            }
+            uint32_t frameTime = SDL_GetTicks() - lastFrameTime;
+            if (frameTime < ticksPerFrame) {
+                SDL_Delay(ticksPerFrame - frameTime);
+            }
+            lastFrameTime = SDL_GetTicks();
+            gpu.setFrameReady(false);
         }
-        cycles_until_poll = 0;
-    }
         
-        // if (gpu.getPPUMode() != V_BLANK) 
-        cpu.execute();
         
   
 
         // Debugging -> checks if cycles match expected cycles TODO: Remove
-        if (cpu.cb) {
-            if ((int)cpu.cyclesPassed + cpu.interruptCycles != cpu.cycles && !cpu.none) {
-                std::cout << std::hex << std::uppercase << std::setfill('0') << std::setw(2) << "CB" << (int)cpu.op << " | " << std::dec << cpu.cycles << "-" <<  (int)cpu.cyclesPassed << " \n";
+        // if (cpu.cb) {
+        //     if ((int)cpu.cyclesPassed + cpu.interruptCycles != cpu.cycles && !cpu.none) {
+        //         std::cout << std::hex << std::uppercase << std::setfill('0') << std::setw(2) << "CB" << (int)cpu.op << " | " << std::dec << cpu.cycles << "-" <<  (int)cpu.cyclesPassed << " \n";
                 
-            }
-        } else {
-            if ((int)cpu.cyclesPassed + cpu.interruptCycles != cpu.cycles && !cpu.none) {
-                std::cout << std::hex << std::uppercase << std::setfill('0') << std::setw(2) <<  (int)cpu.op << " | " << std::dec << cpu.cycles << "-" <<  (int)cpu.cyclesPassed << " \n";
-            }
-        }
-        cpu.cycles = 0;
-        i++;
+        //     }
+        // } else {
+        //     if ((int)cpu.cyclesPassed + cpu.interruptCycles != cpu.cycles && !cpu.none) {
+        //         std::cout << std::hex << std::uppercase << std::setfill('0') << std::setw(2) <<  (int)cpu.op << " | " << std::dec << cpu.cycles << "-" <<  (int)cpu.cyclesPassed << " \n";
+        //     }
+        // }
+        // cpu.cycles = 0;
+        // i++;
     }
 
     // file.close();
