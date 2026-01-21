@@ -78,7 +78,6 @@ void MBC3::write(uint16_t address, uint8_t data) {
         }
         else if (ramBankRTCSelect >= 0x08 && ramBankRTCSelect <= 0x0C) {
             updateTimer();
-            // RTCRegisters[ramBankRTCSelect - 0x08] = data;
             if (ramBankRTCSelect == 0x08) {
                 rtSec = data;
             }
