@@ -7,7 +7,6 @@
 #define SCREEN_WIDTH 160
 #define SCREEN_HEIGHT 144
 #define SCALE 7
-#define FRAMERATE 60
 #define H_BLANK 0
 #define V_BLANK 1
 #define OAM_SCAN 2

@@ -41,9 +41,9 @@ bool MMU::loadRom(const char *filename) {
         std::cout << "Bad ROM" << "\n";
     }
 
-    // Sanity check - Title
+    // Sanity check - Title -> title is between 0x0134 - 0x013E as it is the smallest possible title that won't extend to any possible manufacturer code
     char titleBuffer[17] = {0};
-    std::copy(romData[0].begin() + 0x134, romData[0].begin() + 0x144, titleBuffer);
+    std::copy(romData[0].begin() + 0x0134, romData[0].begin() + 0x013F, titleBuffer);
 
     std::string title(titleBuffer);
     std::cout << "Title: " << title << "\n";
@@ -111,31 +111,29 @@ void MMU::setMBC(int type, std::vector<std::array<uint8_t, ROM_BANK_SIZE>> romDa
 
         case 0x0F: // MBC3 + Timer + Battery
             std::cout << "MBC Type: MBC3 + Timer + Battery\n";
-            this->rom = std::make_unique<MBC3>(romData, romSize, extRamCode);
+            this->rom = std::make_unique<MBC3>(romData, romSize, extRamCode, true);
             this->rom->setBattery(title, this->cgb);
             break;
 
         case 0x10: // MBC3 + Timer + RAM + Battery
             std::cout << "MBC Type: MBC3 + Timer + RAM + Battery\n";
-            this->rom = std::make_unique<MBC3>(romData, romSize, extRamCode);
+            this->rom = std::make_unique<MBC3>(romData, romSize, extRamCode, true);
             this->rom->setBattery(title, this->cgb);
             break;
 
         case 0x11: // MBC3
             std::cout << "MBC Type: MBC3\n";
-            this->rom = std::make_unique<MBC3>(romData, romSize, extRamCode);
-            this->rom->setBattery(title, this->cgb);
+            this->rom = std::make_unique<MBC3>(romData, romSize, extRamCode, false);
             break;
 
         case 0x12: // MBC3 + RAM
             std::cout << "MBC Type: MBC3 + RAM\n";
-            this->rom = std::make_unique<MBC3>(romData, romSize, extRamCode);
-            this->rom->setBattery(title, this->cgb);
+            this->rom = std::make_unique<MBC3>(romData, romSize, extRamCode, false);
             break;
             
         case 0x13: // MBC3 + RAM + Battery
             std::cout << "MBC Type: MBC3 + RAM + Battery\n";
-            this->rom = std::make_unique<MBC3>(romData, romSize, extRamCode);
+            this->rom = std::make_unique<MBC3>(romData, romSize, extRamCode, false);
             this->rom->setBattery(title, this->cgb);
             break;
 

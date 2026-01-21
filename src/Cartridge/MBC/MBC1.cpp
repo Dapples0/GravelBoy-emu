@@ -25,7 +25,7 @@ uint8_t MBC1::read(uint16_t address) {
     }
     // Read from ROM Bank 1-NN
     else if (address >= 0x4000 && address <= 0x7FFF) {
-        return romBank[((ramBankNumber << 5) + romBankNumber) % romBank.size()][(address - 0x4000) % ROM_BANK_SIZE];
+        return romBank[((ramBankNumber << 5) + romBankNumber) % romBank.size()][address % ROM_BANK_SIZE];
 
     }
     // Read from External RAM

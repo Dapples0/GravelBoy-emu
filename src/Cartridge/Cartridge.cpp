@@ -93,18 +93,17 @@ bool Cartridge::loadSave() {
 }
 
 void Cartridge::save() {
-    if (battery) {
-        std::ofstream stream(path, std::ios::out | std::ios::binary);
-        if (stream.is_open()) {
-            for (int i = 0; i < ramSize; ++i) {
-                // Doesn't handle cartridges with 2 KiB of external ram, but in theory no retail cartridges use it
-                int curBank = i / SRAM_BANK_SIZE;
-                char byte = (char)ramBank[curBank][i % SRAM_BANK_SIZE];
-                stream.write(&byte, 1);
-            }
+    std::ofstream stream(path, std::ios::out | std::ios::binary);
+    if (stream.is_open()) {
+        for (int i = 0; i < ramSize; ++i) {
+            // Doesn't handle cartridges with 2 KiB of external ram, but in theory no retail cartridges use it
+            int curBank = i / SRAM_BANK_SIZE;
+            char byte = (char)ramBank[curBank][i % SRAM_BANK_SIZE];
+            stream.write(&byte, 1);
         }
-        stream.close();
     }
+    stream.close();
+
 
     
 }
