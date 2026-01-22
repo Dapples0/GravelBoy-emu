@@ -44,6 +44,11 @@ void gb::run(const char *filename) {
     bool running = true;
 
     uint32_t lastFrameTime = SDL_GetTicks();
+
+    /** Toggles framerate
+     * Increasing framerate does not speed up the "real-time" that is passed in game
+     * so for games like pokemon GSC, save time and pokegear time will not sync
+     */
     std::array<uint8_t, 4> framerate = {60, 120, 180, 240};
     uint8_t frameRateIndex = 0;
     uint32_t ticksPerFrame = 1000 / framerate[0];
@@ -54,10 +59,23 @@ void gb::run(const char *filename) {
         } else {
             while (SDL_PollEvent(&event)) {
                 if (event.type == SDL_QUIT) running = false;
-                const uint8_t *key = SDL_GetKeyboardState(NULL);
-                if (key[SDL_SCANCODE_LCTRL]) {
-                    frameRateIndex = frameRateIndex == 3 ? 0 : ++frameRateIndex;
-                    ticksPerFrame = 1000 / framerate[frameRateIndex];
+                if (event.type == SDL_KEYDOWN) {
+                    switch (event.key.keysym.scancode) {
+                        case SDL_SCANCODE_MINUS:
+                            frameRateIndex = frameRateIndex == 0 ? 0 : --frameRateIndex;
+                            ticksPerFrame = 1000 / framerate[frameRateIndex];
+                            break;
+
+                        case SDL_SCANCODE_EQUALS:
+                            frameRateIndex = frameRateIndex == 3 ? 3 : ++frameRateIndex;
+                            ticksPerFrame = 1000 / framerate[frameRateIndex];
+                            break;
+
+                        default:
+                            break;
+
+                            
+                    }
                 }
             }
             uint32_t frameTime = SDL_GetTicks() - lastFrameTime;
