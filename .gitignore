@@ -2,7 +2,5 @@ rom/*
 main
 logs/
 saves/*
+build/*
 
-
-!rom/.gitkeep
-!saves/.gitkeep
