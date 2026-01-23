@@ -227,9 +227,9 @@ uint8_t MMU::read8(uint16_t address)
         res = this->interrupt->getIF();
     }
 
-    // Audio TODO
+    // Audio
     else if (address >= 0xFF10 && address <= 0xFF3F) {
-        res = 0x0;
+        res = apu->read(address);
 
     }
 
@@ -317,9 +317,9 @@ void MMU::write8(uint16_t address, uint8_t data) {
     else if (address == 0xFF0F) {
         this->interrupt->setIF(data);
     }
-    // Audio TODO
+    // Audio
     else if (address >= 0xFF10 && address <= 0xFF3F) {
-
+        apu->write(address, data);
     }
     // LCD
     else if (address >= 0xFF40 && address <= 0xFF4B) {
