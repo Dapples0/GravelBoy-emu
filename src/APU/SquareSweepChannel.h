@@ -20,7 +20,16 @@ class SquareSweepChannel {
         uint8_t NR14 = 0xBF; // Channel 1 period high & control
 
         bool active = false;
+        uint16_t lengthTimer = 0;
+        uint16_t envelopeTimer = 0;
+        uint8_t volume = 0;
+        uint16_t periodDivider = 0;
 
+        uint8_t sweepTimer = 0;
+        uint16_t shadowPeriodDivider = 0;
+        bool sweepEnable = false;
+
+        uint16_t dutyPosition = 0;
 };
 
 

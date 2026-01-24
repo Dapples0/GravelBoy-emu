@@ -22,8 +22,11 @@ class WaveChannel {
         std::array<uint8_t, 16> wavePatternRAM; // Wave Pattern RAM
 
         bool active = false;
-        bool dac = false;
-
+        uint16_t timer = 0;
+        uint16_t lengthTimer = 0;
+        uint16_t periodDivider = 0;
+        uint8_t wavePosition = 0;
+        uint8_t volume = 0;
 
 };
 

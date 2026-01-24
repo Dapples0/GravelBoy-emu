@@ -20,6 +20,12 @@ class NoiseChannel {
         uint8_t NR44 = 0xFB; // Channel 4 control
 
         bool active = false;
+        uint16_t timer = 0;
+        uint16_t lengthTimer = 0;
+        uint16_t envelopeTimer = 0;
+        uint16_t periodDivider = 0;
+        uint8_t volume = 0;
+        uint16_t lfsr = 0x0000;
 };
 
 

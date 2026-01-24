@@ -85,8 +85,8 @@ void APU::write(uint16_t address, uint8_t data) {
     }
 }
 
-void APU::tick(uint8_t cycles)
-{
+void APU::tick(uint8_t cycles) {
+
 }
 
 void APU::clear() {

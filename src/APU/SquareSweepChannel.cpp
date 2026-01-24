@@ -27,20 +27,31 @@ uint8_t SquareSweepChannel::read(uint16_t address) {
 
 void SquareSweepChannel::write(uint16_t address, uint8_t data) {
     if (address == 0xFF10) {
-        NR10 = data | 0x80;
+        NR10 = data;
     } else if (address == 0xFF11) {
         NR11 = data;
-
+        lengthTimer = 64 - (NR11 & 0x3F);
     } else if (address == 0xFF12) {
         NR12 = data;
         if ((data & 0xF8) == 0) active = false;
     } else if (address == 0xFF13) {
         NR13 = data;
     } else if (address == 0xFF14) {
-        NR14 = data | 0x38;
-        // TODO Trigger event, reset timers and registers
-        if ((data == 0x80) == 0x80) {
+        NR14 = data;
+        if ((data & 0x80) == 0x80) {
             active = true;
+            if (lengthTimer == 0) lengthTimer = 64;
+
+            envelopeTimer = NR12 & 0x07;
+
+            volume = (NR12 >> 4) & 0x0F;
+
+            periodDivider = NR13 | ((NR14 & 0x07) << 8);
+            shadowPeriodDivider = periodDivider;
+
+            uint8_t sweepPeriod = (NR10 >> 4) & 0x07;
+            sweepTimer = (sweepPeriod == 0x00) ? 8 : sweepPeriod;
+            sweepEnable = (sweepPeriod != 0x00 || ((NR10 & 0x07) != 0x00));
         }
 
     }
@@ -52,4 +63,15 @@ void SquareSweepChannel::clear() {
     NR12 = 0x00;
     NR13 = 0x00;
     NR14 = 0x00;
+
+    active = false;
+    lengthTimer = 0;
+    envelopeTimer = 0;
+    volume = 0;
+    periodDivider = 0;
+
+    sweepTimer = 0;
+    shadowPeriodDivider = 0;
+    sweepEnable = false;
+    dutyPosition = 0;
 }

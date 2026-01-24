@@ -19,7 +19,13 @@ class SquareChannel {
         uint8_t NR24 = 0xBF; // Channel 2 period high & control
 
         bool active = false;
+        uint16_t lengthTimer = 0;
+        uint16_t envelopeTimer = 0;
+        uint8_t volume = 0;
+        uint16_t timer = 0;
+        uint16_t periodDivider = 0;
 
+        uint16_t dutyPosition = 0;
 };
 
 
