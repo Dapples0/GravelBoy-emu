@@ -2207,7 +2207,7 @@ void CPU::tick() {
     // Transfer one byte in double speed by two bytes in normal speed
     mmu->HDMATransfer(halt, doubleSpeed ? 1 : 2);
     gpu->tick(doubleSpeed ? 2 : 4);
-    // apu->tick(doubleSpeed ? 2 : 4);
+    apu->tick(doubleSpeed ? 2 : 4);
     
 }
 
