@@ -100,7 +100,7 @@ void SquareChannel::tickEnv() {
         if (envelopeTimer == 0) {
             envelopeTimer = period;
             if ((NR22 & 0x08) == 0x08 && volume < 15) volume++;
-            else if ((NR22 & 0x08) == 0x08 && volume > 0) volume--;
+            else if ((NR22 & 0x08) != 0x08 && volume > 0) volume--;
         }
 
 

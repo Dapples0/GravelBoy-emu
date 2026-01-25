@@ -100,12 +100,6 @@ void SquareSweepChannel::tickLength() {
             }
         }
     }
-    // if (lengthTimer > 0 && (NR14 & 0x40) == 0x40) {
-    //     lengthTimer--;        
-    // }
-    // if (lengthTimer == 0 ) {
-    //     active = false;
-    // }
 }
 
 void SquareSweepChannel::tickEnv() {
@@ -117,7 +111,7 @@ void SquareSweepChannel::tickEnv() {
         if (envelopeTimer == 0) {
             envelopeTimer = period;
             if ((NR12 & 0x08) == 0x08 && volume < 15) volume++;
-            else if ((NR12 & 0x08) == 0x08 && volume > 0) volume--;
+            else if ((NR12 & 0x08) != 0x08 && volume > 0) volume--;
         }
 
 
