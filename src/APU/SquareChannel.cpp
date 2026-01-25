@@ -67,3 +67,39 @@ void SquareChannel::clear() {
     dutyPosition = 0;
     periodDivider = 0;
 }
+
+void SquareChannel::tick() {
+    if (timer > 0) {
+        timer--;
+        if (timer == 0 ) {
+            timer = (2048 - periodDivider) * 4;
+            dutyPosition = (dutyPosition + 1) % 8;            
+        }
+    }
+}
+
+void SquareChannel::tickLength() {
+    if (lengthTimer > 0 && (NR24 & 0x40) == 0x40) {
+        lengthTimer--;
+        if (lengthTimer == 0) {
+            active = false;
+        }
+        
+    }
+}
+
+void SquareChannel::tickEnv() {
+    uint8_t period = (NR22 & 0x07);
+    if (period == 0) return;
+    if (envelopeTimer > 0) {
+        envelopeTimer--;
+
+        if (envelopeTimer == 0) {
+            envelopeTimer = period;
+            if ((NR22 & 0x08) == 0x08 && volume < 15) volume++;
+            else if ((NR22 & 0x08) == 0x08 && volume > 0) volume--;
+        }
+
+
+    }
+}

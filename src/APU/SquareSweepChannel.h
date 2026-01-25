@@ -12,6 +12,10 @@ class SquareSweepChannel {
         void write(uint16_t address, uint8_t data);
 
         void clear();
+        void tick();
+        void tickLength();
+        void tickEnv();
+        void tickSweep();
     private:
         uint8_t NR10 = 0x80; // Channel 1 Sweep
         uint8_t NR11 = 0xBF; // Channel 1 Length Timer & Duty Cycle
@@ -20,6 +24,7 @@ class SquareSweepChannel {
         uint8_t NR14 = 0xBF; // Channel 1 period high & control
 
         bool active = false;
+        uint16_t timer = 0;
         uint16_t lengthTimer = 0;
         uint16_t envelopeTimer = 0;
         uint8_t volume = 0;

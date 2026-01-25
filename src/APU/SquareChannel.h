@@ -12,6 +12,9 @@ class SquareChannel {
         void write(uint16_t address, uint8_t data);
 
         void clear();
+        void tick();
+        void tickLength();
+        void tickEnv();
     private:
         uint8_t NR21 = 0x3F; // Channel 2 Length Timer & Duty Cycle
         uint8_t NR22 = 0x00; // Channel 2 Volume & Envelope

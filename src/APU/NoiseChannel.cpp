@@ -67,3 +67,49 @@ void NoiseChannel::clear() {
     volume = 0;
     lfsr = 0x7FFF; // Not sure if all bits should be cleared or reset
 }
+
+void NoiseChannel::tick() {
+    if (timer > 0) {
+        timer--;
+        if (timer == 0) {
+            uint8_t clockDivider = NR43 & 0x07;
+            uint8_t clockShift = (NR43 >> 4) & 0x0F;
+            uint16_t divisor = (clockDivider == 0) ? 8 : 16 * clockDivider;
+            timer = divisor << clockShift;
+
+
+            uint8_t res = (lfsr & 0x01) ^ ((lfsr >> 1) & 0x01);
+            lfsr = (lfsr >> 1) | (res << 14);
+
+            if ((NR43 & 0x04) == 0x04) {
+                lfsr &= ~0x40;
+                lfsr |= res << 6;
+            }
+        }
+    }
+}
+
+void NoiseChannel::tickLength() {
+    if (lengthTimer > 0 && (NR44 & 0x40) == 0x40) {
+        lengthTimer--;
+        if (lengthTimer == 0) {
+            active = false;
+        }
+        
+    }
+}
+
+void NoiseChannel::tickEnv() {
+    uint8_t period = (NR42 & 0x07);
+    if (period == 0) return;
+    if (envelopeTimer > 0) {
+        envelopeTimer--;
+
+        if (envelopeTimer == 0) {
+            envelopeTimer = period;
+            if ((NR42 & 0x08) == 0x08 && volume < 15) volume++;
+            else if ((NR42 & 0x08) == 0x08 && volume > 0) volume--;
+        }
+
+    }
+}

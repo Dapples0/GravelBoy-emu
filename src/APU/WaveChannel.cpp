@@ -75,3 +75,22 @@ void WaveChannel::clear() {
     volume = 0;
     lengthTimer = 0;
 }
+
+void WaveChannel::tick() {
+    if (timer > 0) {
+        timer--;
+        if (timer == 0) {
+            timer = (2048 - periodDivider) * 2;
+            wavePosition = (wavePosition + 1) % 32;
+        }
+    }
+}
+
+void WaveChannel::tickLength() {
+    if (lengthTimer > 0) {
+        lengthTimer--;
+        if (lengthTimer == 0) {
+            active = false;
+        }
+    }
+}

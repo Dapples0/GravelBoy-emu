@@ -46,6 +46,11 @@ uint8_t APU::read(uint16_t address)
 
 void APU::write(uint16_t address, uint8_t data) {
     if (address == 0xFF26) {
+        bool turningOn = ((data & 0x80) == 0x80) && ((NR52 & 0x80) != 0x80);
+        if (turningOn) {
+            frameSequenceCount = 8192; // May not be needed
+            frameSequencer = 0;
+        }
         if ((data & 0x80) == 0x80) {
             NR52 |= 0x80;
         } else {
@@ -86,7 +91,76 @@ void APU::write(uint16_t address, uint8_t data) {
 }
 
 void APU::tick(uint8_t cycles) {
+    for (int i = 0; i < cycles; ++i) {
+        if ((NR52 & 0x80) == 0x80) {
+            if (--frameSequenceCount == 0) {
+                frameSequenceCount = 8192;
+                
+                switch (frameSequencer) {
+                    case 0:
+                        square1.tickLength();
+                        square2.tickLength();
+                        wave.tickLength();
+                        noise.tickLength();
+                        break;
 
+                    case 2:
+                        square1.tickSweep();
+                        square1.tickLength();
+                        square2.tickLength();
+                        wave.tickLength();
+                        noise.tickLength();
+                        break;
+
+                    case 4:
+                        square1.tickLength();
+                        square2.tickLength();
+                        wave.tickLength();
+                        noise.tickLength();
+                        break;
+
+                    case 6:
+                        square1.tickSweep();
+                        square1.tickLength();
+                        square2.tickLength();
+                        wave.tickLength();
+                        noise.tickLength();
+                        break;
+
+
+                    case 7:
+                        square1.tickEnv();
+                        square2.tickEnv();
+                        noise.tickEnv();
+                        break;
+
+                    default:
+                        break;
+                }
+                frameSequencer = (frameSequencer + 1) % 8;
+            }
+
+            square1.tick();
+            square2.tick();
+            wave.tick();
+            noise.tick();            
+        }
+
+        if (--sampleCount == 0) {
+            sampleCount = 95;
+
+            // TODO mix channels 
+        }
+
+        if (sampleBuffer.size() >= 4096) {
+            // TODO queue audio
+
+
+
+            sampleBuffer.clear();
+        }
+
+    }
 }
 
 void APU::clear() {
@@ -94,8 +168,15 @@ void APU::clear() {
     NR51 = 0x00;
     NR50 = 0x00;
 
+    frameSequenceCount = 8192;
+    frameSequencer = 0;
+    sampleCount = 95;
+
+    sampleBuffer.clear();
+
     square1.clear();
     square2.clear();
     wave.clear();
     noise.clear();
 }
+

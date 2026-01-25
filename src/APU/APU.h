@@ -6,6 +6,7 @@
 #include "SquareChannel.h"
 #include "WaveChannel.h"
 #include <cstdint>
+#include <vector>
 
 
 class APU {
@@ -28,6 +29,12 @@ class APU {
         NoiseChannel noise;
         
         void clear();
+
+        uint32_t frameSequenceCount = 8192;
+        uint8_t frameSequencer = 0;
+        uint32_t sampleCount = 95;
+
+        std::vector<float> sampleBuffer;
         
 };
 

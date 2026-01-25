@@ -13,6 +13,10 @@ class NoiseChannel {
         void write(uint16_t address, uint8_t data);
 
         void clear();
+        void tick();
+        void tickLength();
+        void tickEnv();
+        
     private:
         uint8_t NR41 = 0xFF; // Channel 4 Length Timer
         uint8_t NR42 = 0x00; // Channel 4 Volume & Envelope

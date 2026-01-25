@@ -13,6 +13,8 @@ class WaveChannel {
         void write(uint16_t address, uint8_t data);
 
         void clear();
+        void tick();
+        void tickLength();
     private:
         uint8_t NR30 = 0x7F; // Channel 3 DAC Enable
         uint8_t NR31 = 0xFF;// Channel 3 Length Timer

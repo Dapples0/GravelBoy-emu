@@ -52,6 +52,8 @@ void SquareSweepChannel::write(uint16_t address, uint8_t data) {
             uint8_t sweepPeriod = (NR10 >> 4) & 0x07;
             sweepTimer = (sweepPeriod == 0x00) ? 8 : sweepPeriod;
             sweepEnable = (sweepPeriod != 0x00 || ((NR10 & 0x07) != 0x00));
+
+            timer = (2048 - periodDivider) * 4;
         }
 
     }
@@ -65,6 +67,7 @@ void SquareSweepChannel::clear() {
     NR14 = 0x00;
 
     active = false;
+    timer = 0;
     lengthTimer = 0;
     envelopeTimer = 0;
     volume = 0;
@@ -74,4 +77,68 @@ void SquareSweepChannel::clear() {
     shadowPeriodDivider = 0;
     sweepEnable = false;
     dutyPosition = 0;
+}
+
+void SquareSweepChannel::tick() {
+    if (timer > 0) {
+        timer--;
+        if (timer == 0) {
+            timer = (2048 - periodDivider) * 4;
+            dutyPosition = (dutyPosition + 1) % 8;
+        }
+    }
+}
+
+void SquareSweepChannel::tickLength() {
+    if (lengthTimer > 0 && (NR14 & 0x40) == 0x40) {
+        lengthTimer--;
+        if (lengthTimer == 0) {
+            active = false;
+        }
+        
+    }
+}
+
+void SquareSweepChannel::tickEnv() {
+    uint8_t period = (NR12 & 0x07);
+    if (period == 0) return;
+    if (envelopeTimer > 0) {
+        envelopeTimer--;
+
+        if (envelopeTimer == 0) {
+            envelopeTimer = period;
+            if ((NR12 & 0x08) == 0x08 && volume < 15) volume++;
+            else if ((NR12 & 0x08) == 0x08 && volume > 0) volume--;
+        }
+
+
+    }
+}
+
+void SquareSweepChannel::tickSweep() {
+    if (sweepTimer > 0) {
+        sweepTimer--;
+
+        if (sweepTimer == 0) {
+            uint8_t sweepPeriod = (NR10 >> 4) & 0x07;
+            sweepTimer = (sweepPeriod == 0x00) ? 8 : sweepPeriod;
+
+            if (sweepEnable && sweepPeriod > 0) {
+                uint8_t sweepStep = (NR10 & 0x07);
+                uint16_t newPeriod = shadowPeriodDivider >> sweepStep;
+
+                uint8_t sweepDir = (NR10 >> 3) & 0x01;
+
+                if (sweepDir == 0x01) newPeriod = shadowPeriodDivider - newPeriod;
+                else newPeriod = shadowPeriodDivider + newPeriod;
+                
+                if (newPeriod > 2047) active = false;
+
+                if (sweepStep > 0 && active) {
+                    periodDivider = newPeriod;
+                    shadowPeriodDivider = newPeriod;
+                }
+            }
+        }
+    }
 }
