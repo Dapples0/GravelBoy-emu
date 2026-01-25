@@ -4,13 +4,14 @@
 #include "../Memory/MMU.h"
 #include "../IO/Timer.h"
 #include "../GPU/GPU.h"
+#include "../APU/APU.h"
 
 class CPU {
     public:
         CPU();
         ~CPU();
 
-        void connect(MMU *mmu, Timer *timer, GPU *gpu);
+        void connect(MMU *mmu, Timer *timer, GPU *gpu, APU *apu);
         void setMode(bool mode);
         void execute();
 
@@ -20,6 +21,7 @@ class CPU {
         MMU *mmu;
         Timer *timer;
         GPU *gpu;
+        APU *apu;
 
         /** GP Registers
          * 0 - A

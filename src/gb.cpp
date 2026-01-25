@@ -6,7 +6,6 @@
 
 #include "gb.h"
 
-
 gb::gb() : cpu(), apu(), gpu(), joypad(), mmu(), timer(), interrupt() {
     // cpu = CPU();
     // apu = APU();
@@ -15,7 +14,7 @@ gb::gb() : cpu(), apu(), gpu(), joypad(), mmu(), timer(), interrupt() {
     // mmu = MMU();
     // timer = Timer();
 
-    cpu.connect(&mmu, &timer, &gpu);
+    cpu.connect(&mmu, &timer, &gpu, &apu);
     mmu.connect(&gpu, &joypad, &timer, &apu, &interrupt);
     timer.connect(&interrupt);
     gpu.connect(&interrupt);
@@ -28,6 +27,7 @@ gb::~gb()
 }
 
 void gb::run(const char *filename) {
+    struct gb_global gb_global;
     bool mode = mmu.loadRom(filename);
 
     std::cout << "--------------------------------\n";
@@ -39,19 +39,18 @@ void gb::run(const char *filename) {
         exit(1);
     }
     gpu.attatchSDL();
+    apu.initialiseSDL();
     SDL_Event event;
 
     bool running = true;
 
     uint32_t lastFrameTime = SDL_GetTicks();
+    gb_global.ticksPerFrame = 1000 / gb_global.framerate[0];
 
     /** Toggles framerate
      * Increasing framerate does not speed up the "real-time" that is passed in game
      * so for games like pokemon GSC, save time and pokegear time will not sync
      */
-    std::array<uint8_t, 4> framerate = {60, 120, 180, 240};
-    uint8_t frameRateIndex = 0;
-    uint32_t ticksPerFrame = 1000 / framerate[0];
 
     while (running) {
         if (!gpu.isFrameReady()) {
@@ -62,13 +61,13 @@ void gb::run(const char *filename) {
                 if (event.type == SDL_KEYDOWN) {
                     switch (event.key.keysym.scancode) {
                         case SDL_SCANCODE_MINUS:
-                            frameRateIndex = frameRateIndex == 0 ? 0 : --frameRateIndex;
-                            ticksPerFrame = 1000 / framerate[frameRateIndex];
+                            gb_global.frameRateIndex = gb_global.frameRateIndex == 0 ? 0 : --gb_global.frameRateIndex;
+                            gb_global.ticksPerFrame = 1000 / gb_global.framerate[gb_global.frameRateIndex];
                             break;
 
                         case SDL_SCANCODE_EQUALS:
-                            frameRateIndex = frameRateIndex == 3 ? 3 : ++frameRateIndex;
-                            ticksPerFrame = 1000 / framerate[frameRateIndex];
+                            gb_global.frameRateIndex = gb_global.frameRateIndex == 3 ? 3 : ++gb_global.frameRateIndex;
+                            gb_global.ticksPerFrame = 1000 / gb_global.framerate[gb_global.frameRateIndex];
                             break;
 
                         default:
@@ -79,8 +78,8 @@ void gb::run(const char *filename) {
                 }
             }
             uint32_t frameTime = SDL_GetTicks() - lastFrameTime;
-            if (frameTime < ticksPerFrame) {
-                SDL_Delay(ticksPerFrame - frameTime);
+            if (frameTime < gb_global.ticksPerFrame) {
+                SDL_Delay(gb_global.ticksPerFrame - frameTime);
             }
             lastFrameTime = SDL_GetTicks();
             gpu.setFrameReady(false);

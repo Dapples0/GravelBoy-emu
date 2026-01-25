@@ -36,11 +36,9 @@ uint8_t MBC1::read(uint16_t address) {
         }
         uint16_t relative_address = address & 0x1FFF;
         if (bankingMode) {
-            // return ramBank[ramBankNumber][address % SRAM_BANK_SIZE];
-            return ramBank[ramBankNumber][relative_address];
+            return ramBank[ramBankNumber % ramBank.size()][relative_address];
 
         } else {
-            // return ramBank[0][address % SRAM_BANK_SIZE];
             return ramBank[0][relative_address];
 
         }

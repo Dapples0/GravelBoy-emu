@@ -29,7 +29,7 @@ uint8_t MBC5::read(uint16_t address) {
         }
 
         uint16_t relative_address = address & 0x1FFF;
-        return ramBank[ramBankNumber][relative_address];
+        return ramBank[ramBankNumber % ramBank.size()][relative_address];
     }
     return 0xFF;
 }
@@ -63,7 +63,7 @@ void MBC5::write(uint16_t address, uint8_t data) {
         }
 
         uint16_t relative_address = address & 0x1FFF;
-        ramBank[ramBankNumber][relative_address] = data;
+        ramBank[ramBankNumber % ramBank.size()][relative_address] = data;
     }
     
 }

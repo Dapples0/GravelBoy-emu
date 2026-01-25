@@ -1,5 +1,5 @@
 #ifndef GB_H
-#define GB_h
+#define GB_H
 
 #include "APU/APU.h"
 #include "CPU/CPU.h"
@@ -9,7 +9,7 @@
 #include "Cartridge/Cartridge.h"
 #include "IO/Timer.h"
 #include "IO/Interrupts.h"
-
+#include "gb_global.h"
 
 
 class gb {

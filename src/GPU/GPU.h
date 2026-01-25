@@ -74,10 +74,6 @@ class GPU {
         void endHDMATransfer();
         void reduceHDMA(uint16_t val);
 
-
-        
-        bool getTransfer();
-
         void tick(uint8_t dots);
 
         bool isFrameReady();

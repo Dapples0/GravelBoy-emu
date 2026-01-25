@@ -12,10 +12,11 @@ CPU::CPU() {
 CPU::~CPU() {
 }
 
-void CPU::connect(MMU *mmu, Timer *timer, GPU *gpu) {
+void CPU::connect(MMU *mmu, Timer *timer, GPU *gpu, APU *apu) {
     this->mmu = mmu;
     this->timer = timer;
     this->gpu = gpu;
+    this->apu = apu;
 }
 
 void CPU::execute() {
@@ -2206,7 +2207,7 @@ void CPU::tick() {
     // Transfer one byte in double speed by two bytes in normal speed
     mmu->HDMATransfer(halt, doubleSpeed ? 1 : 2);
     gpu->tick(doubleSpeed ? 2 : 4);
-    // apu->tick(doubleSpeed ? 2 : 4);
+    apu->tick(doubleSpeed ? 2 : 4);
     
 }
 

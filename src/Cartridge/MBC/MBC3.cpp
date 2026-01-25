@@ -30,7 +30,7 @@ uint8_t MBC3::read(uint16_t address) {
         }
         uint16_t relative_address = address & 0x1FFF;
         if (ramBankRTCSelect <= 0x07) {
-            return ramBank[ramBankRTCSelect][relative_address];
+            return ramBank[ramBankRTCSelect % ramBank.size()][relative_address];
         }
         else if (ramBankRTCSelect >= 0x08 && ramBankRTCSelect <= 0x0C) {
             return RTCRegisters[ramBankRTCSelect - 0x08];
@@ -74,7 +74,7 @@ void MBC3::write(uint16_t address, uint8_t data) {
         }
         uint16_t relative_address = address & 0x1FFF;
         if (ramBankRTCSelect <= 0x07) {
-            ramBank[ramBankRTCSelect][relative_address] = data;
+            ramBank[ramBankRTCSelect % ramBank.size()][relative_address] = data;
         }
         else if (ramBankRTCSelect >= 0x08 && ramBankRTCSelect <= 0x0C) {
             if (ramBankRTCSelect == 0x08) {
