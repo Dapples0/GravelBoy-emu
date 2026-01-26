@@ -69,7 +69,7 @@ This emulator only supports games of the following cartridge types:
 
 MBC1 will be defaulted to, if a game uses an unsupported cartridge type.
 
-MBC3's RTC is not implemented correctly. So games that track how much real-time has passed may be a bit jank. Moreover, speeding up the game does not speed up how much 'real-time" has passed as it only speeds up in-game time.
+MBC3's RTC is not implemented correctly. So games that track how much real-time has passed may be a bit jank. Moreover, speeding up the game does not speed up how much real-time has passed as it only speeds up in-game time.
 
 ### Graphics
 To render the graphics on screen, I chose to use a scanline buffer instead of the FIFO approach. So graphical glitches wil be apparent for demos and games that require precise accuracy for its graphics.
