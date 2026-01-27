@@ -21,7 +21,7 @@ cmake --build .
 ```
 **Note:** Windows systems may need to use other build methods such as using ```cmake -G "MinGW Makefiles" ..  ``` instead of ```cmake .. ``` to compile.
 
-How to run the program:
+To run the program:
 ```
 ./GravelBoy path/to/rom
 ```
@@ -47,7 +47,7 @@ How to run the program:
 
 Game Speeds = [ 60, 120, 180, 240 ]
 ## Saves
-If a game supports saves, a **saves** folder be created and the respective save will be stored there. Moreover, CGB games will have "cgb" be appended at the end of the save name to prevent DMG and CGB games from sharing the same save filenames.
+If a game supports saves, a **saves** folder will be created and the respective save will be stored there. CGB games will have "cgb" be appended at the end of the save name to prevent DMG and CGB games from sharing the same save filenames.
 
 ## Development Notes
 Some hardware quirks such as the "halt-bug" have not been implemented.
