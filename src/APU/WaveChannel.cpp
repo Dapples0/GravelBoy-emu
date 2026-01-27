@@ -90,7 +90,7 @@ void WaveChannel::tick() {
 void WaveChannel::tickLength() {
     if ((NR34 & 0x40) == 0x40) {
         if (lengthTimer > 0) {
-            lengthTimer --;
+            lengthTimer--;
 
             if (lengthTimer == 0) {
                 active = false;

@@ -94,7 +94,7 @@ void NoiseChannel::tick() {
 void NoiseChannel::tickLength() {
     if ((NR44 & 0x40) == 0x40) {
         if (lengthTimer > 0) {
-            lengthTimer --;
+            lengthTimer--;
 
             if (lengthTimer == 0) {
                 active = false;

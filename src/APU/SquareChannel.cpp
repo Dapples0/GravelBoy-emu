@@ -82,7 +82,7 @@ void SquareChannel::tick() {
 void SquareChannel::tickLength() {
     if ((NR24 & 0x40) == 0x40) {
         if (lengthTimer > 0) {
-            lengthTimer --;
+            lengthTimer--;
 
             if (lengthTimer == 0) {
                 active = false;

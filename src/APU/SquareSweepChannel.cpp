@@ -93,7 +93,7 @@ void SquareSweepChannel::tick() {
 void SquareSweepChannel::tickLength() {
     if ((NR14 & 0x40) == 0x40) {
         if (lengthTimer > 0) {
-            lengthTimer --;
+            lengthTimer--;
 
             if (lengthTimer == 0) {
                 active = false;
