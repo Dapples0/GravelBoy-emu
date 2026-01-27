@@ -1,5 +1,7 @@
 #include "MBC3.h"
 
+extern struct gb_global gb_global;
+
 MBC3::MBC3(std::vector<std::array<uint8_t, ROM_BANK_SIZE>> romData, int romSize, int extRamCode, bool timer) {
     this->romBank = romData;
     this->romSize = romSize;
@@ -98,11 +100,11 @@ void MBC3::write(uint16_t address, uint8_t data) {
 
 }
 
-void MBC3::setBattery(std::string title, bool cgb) {
+void MBC3::setBattery(std::string title) {
     path = title;
 
     // handles cases where cgb enhancement version of a game shares the same title of the dmg version
-    if (cgb) path.append("cgb.sav");
+    if (gb_global.cgb) path.append("cgb.sav");
     else path.append(".sav");
     path = "saves/" + path;
     std::cout << "Save filepath: " << path << "\n";

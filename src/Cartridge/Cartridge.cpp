@@ -63,7 +63,7 @@ std::vector<std::vector<uint8_t>> Cartridge::getRamBank(int extRamSize) {
 }
 
 // Does nothing -> let subclass override the function
-void Cartridge::setBattery(std::string title, bool cgb) {
+void Cartridge::setBattery(std::string title) {
 }
 
 bool Cartridge::loadSave() {

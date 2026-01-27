@@ -103,19 +103,19 @@ void MMU::setMBC(int type, std::vector<std::array<uint8_t, ROM_BANK_SIZE>> romDa
         case 0x03: // MBC1 + RAM + Battery
             std::cout << "MBC Type: MBC1 + RAM + Battery\n";
             this->rom = std::make_unique<MBC1>(romData, romSize, extRamCode);
-            this->rom->setBattery(title, gb_global.cgb);
+            this->rom->setBattery(title);
             break;
 
         case 0x0F: // MBC3 + Timer + Battery
             std::cout << "MBC Type: MBC3 + Timer + Battery\n";
             this->rom = std::make_unique<MBC3>(romData, romSize, extRamCode, true);
-            this->rom->setBattery(title, gb_global.cgb);
+            this->rom->setBattery(title);
             break;
 
         case 0x10: // MBC3 + Timer + RAM + Battery
             std::cout << "MBC Type: MBC3 + Timer + RAM + Battery\n";
             this->rom = std::make_unique<MBC3>(romData, romSize, extRamCode, true);
-            this->rom->setBattery(title, gb_global.cgb);
+            this->rom->setBattery(title);
             break;
 
         case 0x11: // MBC3
@@ -131,7 +131,7 @@ void MMU::setMBC(int type, std::vector<std::array<uint8_t, ROM_BANK_SIZE>> romDa
         case 0x13: // MBC3 + RAM + Battery
             std::cout << "MBC Type: MBC3 + RAM + Battery\n";
             this->rom = std::make_unique<MBC3>(romData, romSize, extRamCode, false);
-            this->rom->setBattery(title, gb_global.cgb);
+            this->rom->setBattery(title);
             break;
 
         case 0x19: // MBC5
@@ -147,7 +147,7 @@ void MMU::setMBC(int type, std::vector<std::array<uint8_t, ROM_BANK_SIZE>> romDa
         case 0x1B: // MBC5 + RAM + Battery
             std::cout << "MBC Type: MBC5 + RAM + Battery\n";
             this->rom = std::make_unique<MBC5>(romData, romSize, extRamCode);
-            this->rom->setBattery(title, gb_global.cgb);
+            this->rom->setBattery(title);
             break;
             
         case 0x1C: // MBC5 + Rumble
@@ -158,14 +158,14 @@ void MMU::setMBC(int type, std::vector<std::array<uint8_t, ROM_BANK_SIZE>> romDa
         case 0x1D: // MBC5 + Rumble + RAM
             std::cout << "MBC Type: MBC5 + Rumble + RAM\n";
             this->rom = std::make_unique<MBC5>(romData, romSize, extRamCode);
-            this->rom->setBattery(title, gb_global.cgb);
+            this->rom->setBattery(title);
 
             break;
             
         case 0x1E: // MBC + Rumble + RAM + Battery
             std::cout << "MBC Type: MBC + Rumble + RAM + Battery\n";
             this->rom = std::make_unique<MBC5>(romData, romSize, extRamCode);
-            this->rom->setBattery(title, gb_global.cgb);
+            this->rom->setBattery(title);
             break;
 
         default:

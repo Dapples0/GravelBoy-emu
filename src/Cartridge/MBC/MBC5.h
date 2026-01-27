@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include "../Cartridge.h"
-
+#include "../../gb_global.h"
 
 class MBC5 : public Cartridge {
     public:
@@ -12,7 +12,7 @@ class MBC5 : public Cartridge {
 
         uint8_t read(uint16_t address) override;
         void write(uint16_t address, uint8_t data) override;
-        void setBattery(std::string title, bool cgb) override;       
+        void setBattery(std::string title) override;       
     private:
 
     // Registers

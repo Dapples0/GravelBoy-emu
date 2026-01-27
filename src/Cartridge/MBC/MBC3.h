@@ -1,8 +1,9 @@
 #ifndef MBC3_H
 #define MB3C_H
 
-#include "../../constants.h"
 #include "../Cartridge.h"
+#include "../../constants.h"
+#include "../../gb_global.h"
 
 #include <iostream>
 
@@ -14,7 +15,7 @@ class MBC3 : public Cartridge {
 
         uint8_t read(uint16_t address) override;
         void write(uint16_t address, uint8_t data) override;
-        void setBattery(std::string title, bool cgb) override;   
+        void setBattery(std::string title) override;   
     private:
         // Registers
         bool ramEnable; // Determines whether external RAM can be read or written

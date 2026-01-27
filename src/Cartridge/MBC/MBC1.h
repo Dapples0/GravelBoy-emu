@@ -1,9 +1,10 @@
 #ifndef MBC1_H
 #define MB1C_H
 
-#include "../../constants.h"
-
 #include "../Cartridge.h"
+#include "../../constants.h"
+#include "../../gb_global.h"
+
 
 class MBC1 : public Cartridge {
     public:
@@ -12,7 +13,7 @@ class MBC1 : public Cartridge {
 
         uint8_t read(uint16_t address) override;
         void write(uint16_t address, uint8_t data) override;
-        void setBattery(std::string title, bool cgb) override;   
+        void setBattery(std::string title) override;   
     private:
 
         // Registers

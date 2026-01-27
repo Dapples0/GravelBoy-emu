@@ -17,7 +17,7 @@ class Cartridge {
 
         virtual uint8_t read(uint16_t address);
         virtual void write(uint16_t address, uint8_t data);        
-        virtual void setBattery(std::string title, bool cgb);
+        virtual void setBattery(std::string title);
     protected:
         // ROM Banks
         std::vector<std::array<uint8_t, ROM_BANK_SIZE>> romBank;
