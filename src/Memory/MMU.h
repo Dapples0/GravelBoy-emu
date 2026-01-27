@@ -21,6 +21,7 @@
 #include "../Cartridge/MBC/MBC3.h"
 #include "../Cartridge/MBC/MBC5.h"
 #include "../IO/Interrupts.h"
+#include "../gb_global.h"
 
 
 class MMU {
@@ -29,16 +30,13 @@ class MMU {
         ~MMU();
 
         void connect(GPU *gpu, Joypad *joypad, Timer *timer, APU *apu, Interrupts *interrupt);
-        bool loadRom(const char *filename);
+        void loadRom(const char *filename);
         uint8_t read8(uint16_t address);
         void write8(uint16_t address, uint8_t data);
 
         uint8_t getIF();
         uint8_t getIE();
         void setIF(uint8_t val);
-        
-        // Debugging read
-        uint8_t readPeek(uint16_t address);
 
         void OAMDMATransfer();
         void HDMATransfer(bool halt, uint8_t numBytes);
@@ -58,9 +56,6 @@ class MMU {
 
         // High Ram
         std::array<uint8_t, 0x7F> hram = {};
-
-        // CGB Flag -> also present in CPU
-        bool cgb;
 
         uint8_t key1 = 0;
 

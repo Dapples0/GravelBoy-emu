@@ -6,14 +6,10 @@
 
 #include "gb.h"
 
-gb::gb() : cpu(), apu(), gpu(), joypad(), mmu(), timer(), interrupt() {
-    // cpu = CPU();
-    // apu = APU();
-    // gpu = GPU();
-    // joypad = Joypad();
-    // mmu = MMU();
-    // timer = Timer();
+struct gb_global gb_global;
 
+
+gb::gb() : cpu(), apu(), gpu(), joypad(), mmu(), timer(), interrupt() {
     cpu.connect(&mmu, &timer, &gpu, &apu);
     mmu.connect(&gpu, &joypad, &timer, &apu, &interrupt);
     timer.connect(&interrupt);
@@ -27,11 +23,10 @@ gb::~gb()
 }
 
 void gb::run(const char *filename) {
-    struct gb_global gb_global;
-    bool mode = mmu.loadRom(filename);
+    mmu.loadRom(filename);
 
     std::cout << "--------------------------------\n";
-    cpu.setMode(mode);
+    cpu.setMode();
 
     // Initialise SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER)) {
@@ -44,13 +39,12 @@ void gb::run(const char *filename) {
 
     bool running = true;
 
-    uint32_t lastFrameTime = SDL_GetTicks();
-    gb_global.ticksPerFrame = 1000 / gb_global.framerate[0];
-
     /** Toggles framerate
      * Increasing framerate does not speed up the "real-time" that is passed in game
      * so for games like pokemon GSC, save time and pokegear time will not sync
      */
+    uint32_t lastFrameTime = SDL_GetTicks();
+    gb_global.ticksPerFrame = 1000 / gb_global.framerate[0];
 
     while (running) {
         if (!gpu.isFrameReady()) {

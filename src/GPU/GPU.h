@@ -11,7 +11,7 @@
 
 #include "../constants.h"
 #include "../IO/Interrupts.h"
-
+#include "../gb_global.h"
 
 
 class GPU {
@@ -20,7 +20,7 @@ class GPU {
         ~GPU();
 
         void connect(Interrupts *interrupt);
-        void setCGBMode(bool mode);
+        void setCGBMode();
 
         uint8_t readVRAM(uint16_t address);
         void writeVRAM(uint16_t address, uint8_t data);
@@ -106,7 +106,6 @@ class GPU {
          */
         int PPUmode;
         uint32_t dotCount = 0;
-        bool cgb;
         bool lcdOff = false;
 
         bool oamTransfer = false;

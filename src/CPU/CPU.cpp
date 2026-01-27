@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 
+extern struct gb_global gb_global;
 
 CPU::CPU() {
 
@@ -86,10 +87,10 @@ void CPU::executeInstruction(uint8_t opcode) {
             break;
             
 
-        case 0x10: // STOP 
+        case 0x10: // STOP -> STOP instruction byte length is complicated so have it either consume 1 or 2 bytes
         {
             // Only used for CGB
-            if (!CGBMode) {
+            if (!gb_global.cgb) {
                 return;
             }
             // Call mmu read and write here as reading and writing to key1 shouldn't take t-cycles
@@ -2202,11 +2203,14 @@ void CPU::executeCBInstruction(uint8_t opcode) {
 
 void CPU::tick() {
     timer->tick();
+
     mmu->OAMDMATransfer();
 
     // Transfer one byte in double speed by two bytes in normal speed
     mmu->HDMATransfer(halt, doubleSpeed ? 1 : 2);
+
     gpu->tick(doubleSpeed ? 2 : 4);
+
     apu->tick(doubleSpeed ? 2 : 4);
     
 }
@@ -2243,13 +2247,8 @@ void CPU::write16(uint16_t address, uint16_t data) {
 }
 
 
-void CPU::setMode(bool mode)
-{
-    // resetGB();
-    // CGBMode = false;
-    CGBMode = mode;
-    
-    if (!mode) {
+void CPU::setMode() {
+    if (!gb_global.cgb) {
         resetGB();
         
     } else {
@@ -2257,8 +2256,7 @@ void CPU::setMode(bool mode)
     }
 }
 
-void CPU::resetGB()
-{
+void CPU::resetGB() {
     registers[REG_A] = 0x01;
     registers[REG_F] = 0xB0;
     registers[REG_B] = 0x00;
@@ -2273,8 +2271,7 @@ void CPU::resetGB()
     halt = false;
 }
 
-void CPU::resetCGB()
-{
+void CPU::resetCGB() {
     registers[REG_A] = 0x11;
     registers[REG_F] = 0x80;
     registers[REG_B] = 0x00;
@@ -2675,8 +2672,7 @@ void CPU::BIT(uint8_t pos, uint8_t reg) {
     setZ((reg & (0x01 << pos)) == 0);
 }
 
-bool CPU::getDoubleSpeed()
-{
+bool CPU::getDoubleSpeed() {
     return doubleSpeed;
 }
 
@@ -2696,8 +2692,6 @@ void CPU::handleInterrupts() {
     ime = false;
     ei_hold = false;
 
-
-
     // Service two wait states
     this->tick();
     this->tick();
@@ -2705,7 +2699,9 @@ void CPU::handleInterrupts() {
     // Push PC onto stack
     sp -= 2;
     this->write16(sp, pc);
+
     uint16_t address = 0x0000;
+
     if (pending & VBLANK_BIT) {
         mmu->setIF(iFlag & ~VBLANK_BIT); 
         address = VBLANK_INT;
@@ -2726,6 +2722,7 @@ void CPU::handleInterrupts() {
         mmu->setIF(iFlag & ~JOYPAD_BIT); 
         address = JOYPAD_INT; 
     }
+
     // Set address to handler
     pc = address;
     this->tick();

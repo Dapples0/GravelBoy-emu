@@ -8,6 +8,7 @@ struct gb_global {
     uint8_t frameRateIndex = 0;
     uint32_t ticksPerFrame;
 
+    bool cgb = false;
 
 };
 

@@ -27,14 +27,14 @@ uint8_t Joypad::read() {
 
     if (!(res & JOYPAD_SELECT_DIRECTION_PAD)) {
         if (key[SDL_SCANCODE_RIGHT]) buttons &= ~JOYPAD_DIRECTION_RIGHT;
-        if (key[SDL_SCANCODE_LEFT])  buttons &= ~JOYPAD_DIRECTION_LEFT;
-        if (key[SDL_SCANCODE_UP])    buttons &= ~JOYPAD_DIRECTION_UP;
-        if (key[SDL_SCANCODE_DOWN])  buttons &= ~JOYPAD_DIRECTION_DOWN;
+        if (key[SDL_SCANCODE_LEFT]) buttons &= ~JOYPAD_DIRECTION_LEFT;
+        if (key[SDL_SCANCODE_UP]) buttons &= ~JOYPAD_DIRECTION_UP;
+        if (key[SDL_SCANCODE_DOWN]) buttons &= ~JOYPAD_DIRECTION_DOWN;
     }
 
     if (!(res & JOYPAD_SELECT_BUTTONS)) {
-        if (key[SDL_SCANCODE_X])      buttons &= ~JOYPAD_BUTTON_A; // Button A
-        if (key[SDL_SCANCODE_Z])      buttons &= ~JOYPAD_BUTTON_B; // Button B
+        if (key[SDL_SCANCODE_X]) buttons &= ~JOYPAD_BUTTON_A; // Button A
+        if (key[SDL_SCANCODE_Z]) buttons &= ~JOYPAD_BUTTON_B; // Button B
         if (key[SDL_SCANCODE_C]) buttons &= ~JOYPAD_BUTTON_SELECT; // Select
         if (key[SDL_SCANCODE_SPACE]) buttons &= ~JOYPAD_BUTTON_START; // Start
     }

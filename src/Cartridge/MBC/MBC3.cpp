@@ -115,7 +115,7 @@ void MBC3::setBattery(std::string title, bool cgb) {
         std::ifstream stream(path, std::ios::binary | std::ios::ate);
         if (stream.is_open()) {
             // Subtract 5 to consider RTC store in file and 8 to consider time
-            if (ramSize == (int)stream.tellg() - sizeof(time_t) - 5) {
+            if (ramSize == (int)stream.tellg() - sizeof(time_t) - RTCRegisters.size()) {
                 stream.seekg(0, std::ios::beg);
                 uint8_t byte;
                 for (int i = 0; i < ramSize; ++i) {

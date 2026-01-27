@@ -5,6 +5,7 @@
 #include "../IO/Timer.h"
 #include "../GPU/GPU.h"
 #include "../APU/APU.h"
+#include "../gb_global.h"
 
 class CPU {
     public:
@@ -12,7 +13,7 @@ class CPU {
         ~CPU();
 
         void connect(MMU *mmu, Timer *timer, GPU *gpu, APU *apu);
-        void setMode(bool mode);
+        void setMode();
         void execute();
 
         bool getDoubleSpeed();
@@ -45,8 +46,6 @@ class CPU {
         bool halt_bug = false;
         bool ei_hold = false;
 
-
-        bool CGBMode;
         bool doubleSpeed;
         int32_t stop_delay = -1;
 
@@ -126,17 +125,6 @@ class CPU {
         uint8_t SWAP(uint8_t val);
         uint8_t SET(uint8_t pos, uint8_t reg);
         void BIT(uint8_t pos, uint8_t reg);
-
-        // Flag helpers
-        // void setHAdd(uint8_t left, uint8_t right);
-        // void setHAdc(uint8_t left, uint8_t right, uint8_t carry);
-        // void setHSub(uint8_t left, uint8_t right);
-        // void setHSbc(uint8_t left, uint8_t right, uint8_t carry);
-        // void setCAdd(uint8_t left, uint8_t right);
-        // void setCAdc(uint8_t left, uint8_t right, uint8_t carry);
-        // void setCSub(uint8_t left, uint8_t right);
-        // void setCSbc(uint8_t left, uint8_t right, uint8_t carry);
-
 
 };
 

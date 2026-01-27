@@ -2,6 +2,8 @@
 #include <bitset>
 #include <iomanip>
 
+extern struct gb_global gb_global;
+
 GPU::GPU() {
 }
 
@@ -119,15 +121,12 @@ void GPU::tick(uint8_t dots) {
             STAT = (STAT & 0xFC) | 0x03;
         }
         
-
-
     }
 }
 
 
-void GPU::setCGBMode(bool mode) {
-    cgb = mode;
-    vram.resize(cgb ? 2 : 1);
+void GPU::setCGBMode() {
+    vram.resize(gb_global.cgb ? 2 : 1);
 }
 
 uint8_t GPU::readVRAM(uint16_t address) {
@@ -135,7 +134,7 @@ uint8_t GPU::readVRAM(uint16_t address) {
         return 0xFF;
     }
     uint16_t relative_address = address & 0x1FFF;
-    if (cgb) {
+    if (gb_global.cgb) {
         return vram[vramBank][relative_address];
 
     } else {
@@ -144,7 +143,7 @@ uint8_t GPU::readVRAM(uint16_t address) {
 }
 
 uint8_t GPU::readVRAMBank(uint16_t address, uint8_t bank) {
-    if (!cgb && bank == 1) {
+    if (!gb_global.cgb && bank == 1) {
         std::cerr << "Reading from second VRAM bank on DMG mode\n";
     }
     uint16_t relative_address = address & 0x1FFF;
@@ -157,7 +156,7 @@ void GPU::writeVRAM(uint16_t address, uint8_t data) {
         return;
     }
     uint16_t relative_address = address & 0x1FFF;
-    if (cgb) {
+    if (gb_global.cgb) {
         vram[vramBank][relative_address] = data;
 
     } else {
@@ -509,9 +508,7 @@ void GPU::VBlank() {
             LY = 0;
         }
 
-
     }
-
 
 }
 
@@ -546,9 +543,9 @@ void GPU::renderScanline() {
 
         tileNum = readVRAMBank((tileY * 32 + tileX + address), 0);
         tileAddress = (LCDC & 0x10) == 0x10 ? 0x8000  + (16 * tileNum): 0x9000 + (16 * (int8_t)tileNum);
-        tileAttr = cgb ? readVRAMBank(tileY * 32 + tileX + address, 1) : 0;
+        tileAttr = gb_global.cgb ? readVRAMBank(tileY * 32 + tileX + address, 1) : 0;
         // Y flip
-        if ((cgb && (tileAttr & 0x40) == 0x40)) {
+        if ((gb_global.cgb && (tileAttr & 0x40) == 0x40)) {
             tileAddress += windowDrawn ? (14 - 2 * (windowLineCounter % 8)) :  (14 - 2 * ((LY + SCY) % 8));
         } 
         else {
@@ -556,7 +553,7 @@ void GPU::renderScanline() {
         }
             
 
-        bank = (cgb) ? (tileAttr >> 3) & 0x01 : 0;        
+        bank = (gb_global.cgb) ? (tileAttr >> 3) & 0x01 : 0;        
         lower = readVRAMBank(tileAddress, bank);
         upper = readVRAMBank(tileAddress + 1, bank);
 
@@ -572,7 +569,7 @@ void GPU::renderScanline() {
 
 
         // Get colour
-        if (cgb) {
+        if (gb_global.cgb) {
             colour = readBGPalette(tileAttr & 0x07, colourId);
         } else {
             // if background enable not set, use colour 0 of BGP
@@ -581,7 +578,7 @@ void GPU::renderScanline() {
         SDL_Display[i + LY * SCREEN_WIDTH] = colour;
 
         // For BG priority in CGB mode
-        if (cgb) {
+        if (gb_global.cgb) {
             bgAttr[i + LY * SCREEN_WIDTH] = tileAttr;
             bgColourId[i + LY * SCREEN_WIDTH] = colourId;
         } else {
@@ -624,7 +621,7 @@ void GPU::renderScanline() {
                                     (objTileNum & 0xFFFE) * 16 + 2 * ((LY - posY + 16));
                 }
 
-                bank = (cgb) ? (objAttr >> 3) & 0x01 : 0;
+                bank = (gb_global.cgb) ? (objAttr >> 3) & 0x01 : 0;
 
                 lower = readVRAMBank(tileAddress, bank);
                 upper = readVRAMBank(tileAddress + 1, bank);
@@ -636,7 +633,7 @@ void GPU::renderScanline() {
                 colourId = ((upper & flipMask) ? 2 : 0 ) | ((lower & flipMask) ? 1 : 0);
 
                 // Get colour
-                if (cgb) {
+                if (gb_global.cgb) {
                     colour = readObjPalette(objAttr & 0x07, colourId);
                 } else {
                     colour = getDMGColour(colourId, (objAttr & 0x10) == 0x10 ? OBP1 : OBP0);
@@ -644,7 +641,7 @@ void GPU::renderScanline() {
                 if (colourId == 0) continue;
 
                 // object priority mode check
-                if (cgb) {
+                if (gb_global.cgb) {
                     // for cgb we prioritise the object that comes first in the oam buffer
                     if (objPrio[i + LY * SCREEN_WIDTH] != 0) continue;
                 } else {
@@ -654,7 +651,7 @@ void GPU::renderScanline() {
                 }
 
                 bool showObj = true;
-                if (cgb) {
+                if (gb_global.cgb) {
                     if (bgColourId[i + LY * SCREEN_WIDTH] == 0) {
                         showObj = true;
                     } else if (!enableOrPrio) {
