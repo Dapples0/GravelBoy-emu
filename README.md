@@ -7,13 +7,13 @@ Most games I've tested were in a playable state, though testing has been limited
 The emulator is locked at 60 fps by default instead of 59.7 fps. So games will run a bit faster in comparison to the actual Game Boy. 
 
 ## How to compile and run
-This program requires SDL2 and CMake should be installed. 
+This program requires SDL2, and CMake should be installed. 
 
 Windows systems do not need to install SDL2 as the necessary files have been placed in the **deps** folder, however, the program will require SDL2.dll to be in the same directory in order for it to run.
 
 To compile the program:
 ```
-git clone git@github.com:Dapples0/GravelBoy-emu.git
+git clone git@github.com:Dapples0/GravelBoy.git
 mkdir build
 cd build
 cmake ..
