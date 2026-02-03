@@ -1,6 +1,6 @@
 # GravelBoy
 
-A Game Boy Colour emulator written in C++ that can run CGB games and is backwards compatible with DMG games. This emulator passes the standard Blargg's test roms, acid2 tests, and some of the mooneye test suites.
+A Game Boy Color emulator written in C++ that can run CGB games and is backwards compatible with DMG games. This emulator passes the standard Blargg's test roms, acid2 tests, and some of the mooneye test suites.
 
 Most games I've tested were in a playable state, though testing has been limited to a small handful of games and short play sessions.
 
